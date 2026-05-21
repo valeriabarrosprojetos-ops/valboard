@@ -1266,6 +1266,7 @@ header {
   </div>
   <div class="header-right" style="display:flex;align-items:center;gap:10px;">
     <span id="syncStatus" style="font-size:10px;color:var(--text3);letter-spacing:1px;"></span>
+    <button onclick="exportBackup()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text2);padding:8px 14px;border-radius:8px;font-family:Syne,sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;" title="Exportar backup para enviar ao Claude">📥 Backup</button>
     <button class="btn-primary" id="btnNovaTask" onclick="openModal()" style="display:none">+ Nova tarefa</button>
   </div>
 </header>
@@ -2715,6 +2716,38 @@ function closeInfoModal() {
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────
+function exportBackup() {
+  // Pegar cards do Supabase ou do estado atual
+  const data = {
+    exportDate: new Date().toISOString(),
+    totalCards: cards.length,
+    cards: cards.map(c => ({
+      id: c.id,
+      title: c.title,
+      desc: c.desc || '',
+      notes: c.notes || '',
+      cat: c.cat,
+      tag: c.tag || '',
+      status: c.status || '',
+      value: c.value || 0,
+      due: c.due || '',
+      payDate: c.payDate || '',
+      prio: c.prio || 'medium',
+      col: c.col,
+    }))
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'valboard-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Backup exportado! Mande o arquivo para o Claude.');
+}
+
 function showToast(msg) {
   let t = document.getElementById('toast');
   if (!t) {
