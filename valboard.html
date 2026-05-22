@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Val Board</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#0F0E0C; --surface:#1A1916; --surface2:#222118; --surface3:#2A2820;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
+  --text:#F2EDE4; --text2:#9E9A92; --text3:#5E5B55;
+  --gold:#C9A84C; --green:#6A9E78; --red:#C05050; --blue:#5B8FA8;
+  --violet:#8B7BAD; --orange:#C8824A; --eng:#6B9EBF;
+  --radius:10px;
+}
+body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-serif; min-height:100vh; }
+
+/* ── HEADER ── */
+.header { background:var(--surface); border-bottom:1px solid var(--border); padding:0 16px; height:54px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.brand { font-size:17px; font-weight:700; letter-spacing:-.5px; }
+.header-right { display:flex; align-items:center; gap:8px; }
+.btn-new { background:var(--gold); color:#000; border:none; padding:7px 16px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; display:none; }
+.btn-backup { background:var(--surface2); border:1px solid var(--border2); color:var(--text2); padding:7px 12px; border-radius:8px; font-size:12px; cursor:pointer; }
+
+/* ── NAV ── */
+.nav { background:var(--surface); border-bottom:1px solid var(--border); display:flex; overflow-x:auto; }
+.nav-tab { padding:12px 18px; font-size:13px; font-weight:600; border:none; cursor:pointer; background:none; color:var(--text3); border-bottom:2px solid transparent; white-space:nowrap; flex-shrink:0; }
+.nav-tab.active { color:var(--text); border-bottom-color:var(--gold); }
+
+/* ── PAGES ── */
+.page { display:none; }
+.page.active { display:block; }
+
+/* ── HOME ── */
+.home-grid { display:grid; grid-template-columns:1fr; gap:14px; padding:16px; }
+@media(min-width:768px) { .home-grid { grid-template-columns:1fr 1fr; } }
+@media(min-width:1100px) { .home-grid { grid-template-columns:1.5fr 1fr 1fr; } }
+.home-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.home-card-head { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.home-card-title { font-size:13px; font-weight:700; }
+.home-card-body { padding:14px 16px; }
+
+/* Agenda */
+.agenda-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.agenda-item:last-child { border:none; }
+.agenda-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.agenda-title { font-size:12px; font-weight:600; color:var(--text); }
+.agenda-sub { font-size:10px; color:var(--text3); margin-top:2px; }
+.agenda-date { font-size:10px; font-weight:700; text-align:right; flex-shrink:0; }
+
+/* Resumo financeiro */
+.fin-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.fin-item { background:var(--surface2); border-radius:8px; padding:10px 12px; }
+.fin-label { font-size:10px; color:var(--text3); margin-bottom:3px; }
+.fin-value { font-size:18px; font-weight:700; }
+
+/* ── BOARD ── */
+.board-wrap { padding:14px; overflow-x:auto; }
+.board { display:flex; gap:12px; align-items:flex-start; min-width:max-content; }
+.col { width:285px; background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); flex-shrink:0; }
+.col-bar { height:3px; border-radius:2px 2px 0 0; }
+.col-head { padding:11px 13px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.col-title { font-size:12px; font-weight:700; letter-spacing:.5px; }
+.col-count { background:var(--surface3); color:var(--text3); font-size:11px; font-weight:700; padding:2px 7px; border-radius:20px; }
+.col-body { padding:8px; display:flex; flex-direction:column; gap:7px; min-height:60px; }
+
+/* ── CARDS ── */
+.card { border:1px solid var(--border); border-radius:8px; padding:11px; font-size:12px; }
+.card:hover { border-color:var(--border2); }
+.card-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:5px; line-height:1.3; }
+.card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:5px; margin-bottom:5px; }
+.card-actions { display:flex; gap:3px; flex-shrink:0; }
+.card-btn { background:none; border:1px solid var(--border); color:var(--text3); border-radius:5px; padding:2px 6px; font-size:11px; cursor:pointer; }
+.card-btn:hover { color:var(--text2); border-color:var(--border2); }
+.badges { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px; }
+.badge { font-size:10px; padding:2px 7px; border-radius:20px; font-weight:600; }
+.b-tipo { background:var(--surface3); color:var(--text2); }
+.b-pago { background:rgba(106,158,120,0.2); color:var(--green); }
+.b-tiktok { background:rgba(201,168,76,0.2); color:var(--gold); }
+.b-ugc { background:rgba(139,123,173,0.2); color:var(--violet); }
+.b-afil { background:rgba(91,143,168,0.2); color:var(--blue); }
+.b-org { background:rgba(106,158,120,0.2); color:var(--green); }
+.b-falta { background:rgba(192,80,80,0.18); color:#D47070; border:1px dashed #D47070; }
+.b-status-neg { background:rgba(91,143,168,0.2); color:var(--blue); }
+.b-status-prop { background:rgba(201,168,76,0.2); color:var(--gold); }
+.b-status-vis { background:rgba(139,123,173,0.2); color:var(--violet); }
+.b-status-sem { background:rgba(255,255,255,0.05); color:var(--text3); }
+.b-check { background:var(--surface3); color:var(--text3); }
+.card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:5px; }
+.card-due { font-size:11px; color:var(--text3); }
+.card-due.overdue { color:var(--red); font-weight:700; }
+.card-due.soon { color:var(--orange); font-weight:700; }
+.card-value { font-size:15px; font-weight:700; color:var(--gold); }
+
+/* Checklist no card */
+.chk-item { display:flex; align-items:center; gap:7px; padding:4px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.chk-box { width:15px; height:15px; border-radius:3px; border:1.5px solid var(--border2); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.chk-box.done { background:var(--green); border-color:var(--green); }
+.chk-label { font-size:11px; color:var(--text2); flex:1; }
+.chk-label.done { text-decoration:line-through; color:var(--text3); }
+.chk-count { font-size:10px; color:var(--text3); margin-top:3px; }
+
+/* Prospecção */
+.prosp-fields { background:var(--surface3); border-radius:7px; padding:7px 9px; margin-bottom:7px; }
+.pf { display:flex; gap:5px; font-size:10px; padding:1px 0; }
+.pf-lbl { color:var(--text3); min-width:60px; flex-shrink:0; }
+.pf-val { color:var(--text2); word-break:break-all; }
+.pf-val.empty { color:var(--text3); font-style:italic; }
+.timeline { border-top:1px solid var(--border); padding-top:7px; margin-top:7px; }
+.tl-hdr { font-size:9px; font-weight:700; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-bottom:5px; }
+.tl-entry { display:flex; gap:7px; margin-bottom:4px; }
+.tl-dot { width:6px; height:6px; border-radius:50%; background:var(--blue); flex-shrink:0; margin-top:3px; }
+.tl-dot.old { background:var(--border2); }
+.tl-date { font-size:9px; color:var(--text3); min-width:50px; flex-shrink:0; margin-top:1px; }
+.tl-text { font-size:10px; color:var(--text2); flex:1; line-height:1.4; }
+.tl-empty { font-size:10px; color:var(--text3); font-style:italic; }
+.tl-add { display:flex; gap:4px; margin-top:5px; }
+.tl-input { flex:1; background:var(--surface); border:1px solid var(--border2); border-radius:5px; padding:4px 7px; color:var(--text); font-size:10px; }
+.tl-btn { background:var(--blue); border:none; color:white; padding:4px 9px; border-radius:5px; font-size:10px; font-weight:700; cursor:pointer; }
+
+/* Pessoal */
+.mkt-item { display:flex; align-items:center; gap:7px; padding:5px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.mkt-box { width:15px; height:15px; border-radius:3px; border:1.5px solid var(--border2); flex-shrink:0; }
+.mkt-add { display:flex; gap:5px; margin-top:7px; }
+.mkt-add input { flex:1; background:var(--surface); border:1px solid var(--border2); border-radius:5px; padding:5px 8px; color:var(--text); font-size:11px; }
+.mkt-add button { background:var(--surface3); border:1px solid var(--border2); color:var(--text2); padding:5px 10px; border-radius:5px; font-size:11px; cursor:pointer; }
+.gcal-btn { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:3px 8px; border-radius:5px; background:var(--surface3); color:var(--text2); text-decoration:none; border:1px solid var(--border2); }
+
+/* ── FINANCEIRO ── */
+.fin-page { padding:16px; max-width:1000px; margin:0 auto; }
+.fin-resumo { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+@media(min-width:600px) { .fin-resumo { grid-template-columns:repeat(4,1fr); } }
+.fin-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; }
+.fin-box-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; }
+.fin-box-value { font-size:20px; font-weight:700; }
+.fin-section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:14px; }
+.fin-section-head { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.fin-section-title { font-size:13px; font-weight:700; }
+.fin-list { padding:10px 16px; max-height:340px; overflow-y:auto; }
+.fin-item-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+.fin-item-row:last-child { border:none; }
+.fin-icon { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.fin-item-info { flex:1; min-width:0; }
+.fin-item-title { font-size:12px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fin-item-sub { font-size:10px; color:var(--text3); margin-top:1px; display:flex; gap:6px; flex-wrap:wrap; }
+.fin-item-right { text-align:right; flex-shrink:0; }
+.fin-item-value { font-size:15px; font-weight:700; }
+.fin-item-status { font-size:10px; font-weight:600; margin-top:2px; }
+.fin-filters { display:flex; gap:6px; padding:10px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; align-items:center; }
+.fchip { font-size:11px; padding:4px 11px; border-radius:20px; border:1px solid var(--border2); background:none; color:var(--text3); cursor:pointer; }
+.fchip.active { background:var(--surface2); color:var(--text); border-color:var(--border2); }
+
+/* ── MODAIS ── */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:none; align-items:center; justify-content:center; z-index:100; padding:16px; }
+.overlay.show { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border2); border-radius:14px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; padding:20px; }
+.modal-title { font-size:16px; font-weight:700; margin-bottom:14px; }
+.fg { margin-bottom:11px; }
+.fl { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); display:block; margin-bottom:5px; }
+.fi, .fs, .fta { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; }
+.fta { min-height:70px; resize:vertical; line-height:1.6; }
+.fr { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+.btn-cancel { background:none; border:1px solid var(--border2); color:var(--text2); padding:9px 18px; border-radius:8px; cursor:pointer; font-size:13px; }
+.btn-save { background:var(--gold); color:#000; border:none; padding:9px 22px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px; }
+.pago-toggle { display:flex; align-items:center; gap:10px; padding:9px 12px; background:var(--surface2); border:1px solid var(--border2); border-radius:8px; cursor:pointer; }
+.pago-toggle.on { border-color:var(--green); background:rgba(106,158,120,0.1); }
+.pago-check { width:18px; height:18px; border-radius:4px; border:2px solid var(--border2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.pago-check.on { background:var(--green); border-color:var(--green); }
+.pago-aviso { margin-top:6px; padding:8px 12px; background:rgba(106,158,120,0.1); border-radius:8px; font-size:12px; color:var(--green); display:none; }
+.modal-tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:12px; }
+.modal-tab { flex:1; padding:9px 0; font-size:12px; border:none; cursor:pointer; background:none; color:var(--text3); border-bottom:2px solid transparent; font-weight:600; }
+.modal-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+.chk-add { display:flex; gap:6px; margin-top:6px; }
+.chk-add input { flex:1; background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px; }
+.chk-add button { background:var(--surface3); border:1px solid var(--border2); color:var(--text2); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; }
+
+.drag-over { background:rgba(255,255,255,0.03) !important; }
+.card-dragging { opacity:.4; }
+.drive-link { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:3px 8px; border-radius:5px; background:var(--surface3); color:var(--text2); text-decoration:none; border:1px solid var(--border2); margin-top:5px; }
+
+/* Mobile */
+@media(max-width:767px) {
+  .nav-tab { padding:10px 13px; font-size:12px; }
+  .board-wrap { padding:10px 8px; }
+  .col { width:265px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">✦ Val Board</div>
+  <div class="header-right">
+    <span id="syncStatus" style="font-size:10px;color:var(--text3);"></span>
+    <button class="btn-new" id="btnNew" onclick="openNew()">+ Novo</button>
+    <button class="btn-backup" onclick="exportBackup()">📥 Backup</button>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="nav-tab active" onclick="switchPage('home',this)">🏠 Home</button>
+  <button class="nav-tab" onclick="switchPage('prospeccao',this)">📞 Prospecção</button>
+  <button class="nav-tab" onclick="switchPage('conteudo',this)">🎬 Conteúdo</button>
+  <button class="nav-tab" onclick="switchPage('engenharia',this)">📐 Engenharia</button>
+  <button class="nav-tab" onclick="switchPage('pessoal',this)">🏠 Pessoal</button>
+  <button class="nav-tab" onclick="switchPage('financeiro',this)">💰 Financeiro</button>
+</div>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="home-grid">
+    <div class="home-card" style="grid-row:span 2;">
+      <div class="home-card-head"><span class="home-card-title">📅 Agenda</span><span id="todayLbl" style="font-size:10px;color:var(--text3);"></span></div>
+      <div class="home-card-body" id="agendaBody" style="max-height:420px;overflow-y:auto;padding:0 16px;"></div>
+    </div>
+    <div class="home-card">
+      <div class="home-card-head"><span class="home-card-title">💰 Financeiro</span><button style="font-size:11px;padding:4px 10px;background:var(--surface3);border:1px solid var(--border2);color:var(--text2);border-radius:6px;cursor:pointer;" onclick="switchPage('financeiro',document.querySelectorAll('.nav-tab')[5])">Ver tudo</button></div>
+      <div class="home-card-body" id="homeFinBody"></div>
+    </div>
+    <div class="home-card">
+      <div class="home-card-head"><span class="home-card-title">📊 Resumo</span></div>
+      <div class="home-card-body" id="homeResumoBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROSPECÇÃO -->
+<div class="page" id="page-prospeccao">
+  <div class="board-wrap"><div class="board" id="board-prospeccao"></div></div>
+</div>
+
+<!-- CONTEÚDO -->
+<div class="page" id="page-conteudo">
+  <div class="board-wrap"><div class="board" id="board-conteudo"></div></div>
+</div>
+
+<!-- ENGENHARIA -->
+<div class="page" id="page-engenharia">
+  <div class="board-wrap"><div class="board" id="board-engenharia"></div></div>
+</div>
+
+<!-- PESSOAL -->
+<div class="page" id="page-pessoal">
+  <div class="board-wrap"><div class="board" id="board-pessoal"></div></div>
+</div>
+
+<!-- FINANCEIRO -->
+<div class="page" id="page-financeiro">
+  <div class="fin-page">
+    <button style="width:100%;margin-bottom:14px;padding:14px;background:var(--gold);color:#000;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;" onclick="openLanc()">+ Novo Lançamento</button>
+    <div class="fin-resumo" id="finResumo"></div>
+    <div class="fin-section">
+      <div class="fin-section-head"><span class="fin-section-title">📝 Lançamentos</span></div>
+      <div class="fin-filters">
+        <button class="fchip active" onclick="setLancFiltro('todos',this)">Todos</button>
+        <button class="fchip" onclick="setLancFiltro('entrada',this)" style="color:var(--green)">↑ Entradas</button>
+        <button class="fchip" onclick="setLancFiltro('saida',this)" style="color:var(--red)">↓ Saídas</button>
+        <select class="fi" id="lancMesFiltro" onchange="renderLancs()" style="padding:4px 8px;font-size:11px;width:auto;border-radius:20px;margin-left:auto;"></select>
+      </div>
+      <div class="fin-list" id="lancList"></div>
+    </div>
+    <div class="fin-section">
+      <div class="fin-section-head"><span class="fin-section-title">📋 A Receber (dos cards)</span></div>
+      <div class="fin-list" id="aReceberList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GERAL -->
+<div class="overlay" id="modalGeral" onclick="if(event.target===this)closeGeral()">
+  <div class="modal" id="modalGeralContent"></div>
+</div>
+
+<!-- MODAL LANÇAMENTO -->
+<div class="overlay" id="modalLanc" onclick="if(event.target===this)closeLanc()">
+  <div class="modal">
+    <div class="modal-title" id="lancTitle">Novo Lançamento</div>
+    <div class="fg">
+      <label class="fl">Tipo</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button id="btnEnt" onclick="setLancTipo('entrada')" style="padding:10px;border-radius:9px;border:2px solid var(--green);background:rgba(106,158,120,0.15);color:var(--green);font-weight:700;font-size:13px;cursor:pointer;">↑ Entrada</button>
+        <button id="btnSai" onclick="setLancTipo('saida')" style="padding:10px;border-radius:9px;border:2px solid var(--border2);background:none;color:var(--text3);font-weight:700;font-size:13px;cursor:pointer;">↓ Saída</button>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Descrição *</label><input class="fi" id="lDesc" type="text" placeholder="Ex: Cachê, Aluguel, Material..." /></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Valor (R$) *</label><input class="fi" id="lValor" type="number" min="0" step="0.01" /></div>
+      <div class="fg"><label class="fl">Data *</label><input class="fi" id="lData" type="date" /></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Categoria</label>
+        <select class="fs" id="lCat">
+          <option value="conteudo">🎬 Conteúdo</option>
+          <option value="engenharia">📐 Engenharia</option>
+          <option value="prospeccao">📞 Prospecção</option>
+          <option value="fixo">🏠 Fixo</option>
+          <option value="outros">📦 Outros</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Status</label>
+        <select class="fs" id="lStatus">
+          <option value="pago">✅ Recebido/Pago</option>
+          <option value="pendente">⏳ Pendente</option>
+          <option value="atrasado">⚠️ Atrasado</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Observação</label><input class="fi" id="lObs" type="text" placeholder="Nota fiscal, referência..." /></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeLanc()">Cancelar</button>
+      <button class="btn-save" onclick="saveLanc()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DADOS ────────────────────────────────────────────────────────────
+
+const cardsProsp = [
+{id:'p1001',title:'Tatica Marketing',cidade:'',segmento:'Industria',end:'02722-000',contato:'',tel:'',email:'',linkedin:'',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 27/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 27/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 16/03/2026"}]},
+    {id:'p1002',title:'KOIMAS',cidade:'',segmento:'Industria',end:'02731-090',contato:'',tel:'',email:'',linkedin:'',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[]},
+    {id:'p1003',title:'Murrelektronik',cidade:'',segmento:'',end:'',contato:'',tel:'',email:'',linkedin:'',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[]},
+    {id:'p1004',title:'Radial',cidade:'',segmento:'Industria',end:'03102-060',contato:'',tel:'11 3576.0299',email:'',linkedin:'',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[]},
+    {id:'p1005',title:'Westwing',cidade:'',segmento:'RETAIL',end:'05319-000',contato:'Julia Gomes',tel:'(11) 4003-1054',email:'[julia.gomes@westwing.com.br](mailto:julia.gomes@westwing.com.br "‌")',linkedin:'',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 27/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 27/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 09/03/2026"}]},
+    {id:'p1006',title:'Homenow',cidade:'',segmento:'RETAIL',end:'06460-050',contato:'Monique Avila',tel:'(11) 92233-9351',email:'[monique.avila@homenow.com.br](mailto:monique.avila@homenow.com.br "‌")',linkedin:'https://www.linkedin.com/in/monique-ávila-03a707aa',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 09/03/2026"}]},
+    {id:'p1007',title:'Duratex',cidade:'',segmento:'RETAIL',end:'01310-200',contato:'Flavio Band',tel:'(11) 3179-7500',email:'[flavio.brand@dex.co](mailto:flavio.brand@dex.co "‌")',linkedin:'',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: ULTIMO CONTATO:"}]},
+    {id:'p1008',title:'Basile Quimica',cidade:'',segmento:'CHEMICAL',end:'05163-060',contato:'Sivaldo Americo',tel:'32995000',email:'[logistica@basilequimica.com.br](mailto:logistica@basilequimica.com.br "‌")',linkedin:'https://www.linkedin.com/in/sivaldo-americo-37131064',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 16/03/2026"}]},
+    {id:'p1009',title:'Chemetall',cidade:'',segmento:'CHEMICAL',end:'13212-161',contato:'Caio Oliveira',tel:'(11) 4066-8800',email:'[caio.oliveira@chemetall.com](mailto:caio.oliveira@chemetall.com "‌")',linkedin:'',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 16/03/2026"}]},
+    {id:'p1010',title:'Rittal',cidade:'',segmento:'Industria',end:'05114-001',contato:'Leonardo Silva',tel:'(11) 3622-2377',email:'[leonardo.silva@rittal.com.br](mailto:leonardo.silva@rittal.com.br "‌")',linkedin:'https://www.linkedin.com/in/leonardo-silva-1b891275',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 16/03/2026"}]},
+    {id:'p1011',title:'Schaefer Yachts',cidade:'',segmento:'IATES',end:'88075-010',contato:'Barbara Schaefer / Carla Wieira Matos',tel:'([48) 2106-0001](tel:48 "‌")',email:'[barbara@schaeferyachts.com.br](mailto:barbara@schaeferyachts.com.br "‌")',linkedin:'https://www.linkedin.com/in/carla-wieira-matos-b55a6b170/](https://www.linkedin.com/in/carla-wieira-matos-b55a6b170/',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-17", "text": "ABORDAGEM VIA LINKEDIN PARA CARLA"}]},
+    {id:'p1012',title:'OKEAN Yachts / Ferretti Brasil',cidade:'',segmento:'IATES',end:'01452-001',contato:'',tel:'55 11 2478-3002',email:'[evandro.silvestre@okeanyachts.com](mailto:evandro.silvestre@okeanyachts.com "‌")',linkedin:'[https://www.linkedin.com/sales/lead/ACwAAAAopVMBKskZZb-4fR99HLlqjDtBCzi0L2g,NAME\\_SEARCH,aASK?\\_ntb=8vhyepfKS4KEAbhW7kRS5Q%3D%3D](https://www.linkedin.com/sales/lead/ACwAAAAopVMBKskZZb-4fR99HLlqjDtBCzi0L2g,NAME_SEARCH,aASK?_ntb=8vhyepfKS4KEAbhW7kRS5Q%3D%3D "‌")',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[]},
+    {id:'p1013',title:'Roca Sanitários',cidade:'',segmento:'RETAIL',end:'13.206-105',contato:'Gracy torres',tel:'3378-4600',email:'[gracy.torres@br.roca.com](mailto:gracy.torres@br.roca.com "‌")',linkedin:'https://www.linkedin.com/in/gracy-cristine-torres',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 09/03/2026"}]},
+    {id:'p1014',title:'INOPAT',cidade:'',segmento:'Automotive',end:'05042-010',contato:'Cristina Puerta',tel:'(11) 3865-0042',email:'[cristina.puerta@inopat.com.br](mailto:cristina.puerta@inopat.com.br "‌")',linkedin:'https://www.linkedin.com/in/cristina-cecilia-60481583',obs:'',col:'novo',status:'em_negociacao',due:'2026-05-23',timeline:[]},
+    {id:'p1015',title:'Chen Hsong',cidade:'',segmento:'Industria',end:'05550-900',contato:'Bruno Robles',tel:'(11) 4341-7478/ 11 97808-1214',email:'[brunorobles@chenhsong.com.br](mailto:brunorobles@chenhsong.com.br "‌")',linkedin:'https://www.linkedin.com/in/bruno-oliveira-robles-003835103',obs:'',col:'followup',status:'em_negociacao',due:'2026-05-27',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 11/08/2025"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA:  26/08/2025"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 09/03/2026"}, {"date": "2026-04-08", "text": "ULTIMA VISITA: 16/12/2025"}, {"date": "2026-04-30", "text": "Cobrar retorno, se conseguiu prosseguir/incluir"}, {"date": "2026-05-07", "text": "Passaram celular do Bruno"}, {"date": "2026-05-07", "text": "Passei o numero do celular para o Charles"}]},
+    {id:'p1016',title:'C.N. Palaoro - Biasá Home',cidade:'',segmento:'RETAIL',end:'13.211-090',contato:'Rafael Pires',tel:'(45) 3027-1112',email:'',linkedin:'https://www.linkedin.com/in/rafael-pires-rodrigues',obs:'',col:'followup',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-17", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-17", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-17", "text": "PESQUISEI PELO LIKENDIN E SÓ  CONSEGUI O CONTATO DA CEO.\n\n[https://www.linkedin.com/sales/lead/ACwAAEyCQaUBi281YS614YjnB8ETr7apaWkKthM,NAME_SEARCH,4Ie5](https://www.linkedin.com/sales/lead/ACwAAEyCQaUBi281YS614YjnB8ETr7apaWkKthM,NAME_SEARCH,4Ie5 \"‌\")"}]},
+    {id:'p1017',title:'Dellabruna',cidade:'',segmento:'RETAIL',end:'13289-480',contato:'Gabriel Biglia',tel:'(19) 3876-1783',email:'[gabriel@dellabruna.com.br](mailto:gabriel@dellabruna.com.br "‌")',linkedin:'https://www.linkedin.com/in/gabriel-affonso-romaneti-biglia-8251b750',obs:'',col:'followup',status:'em_negociacao',due:'2026-05-27',timeline:[{"date": "2026-04-17", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-17", "text": "APRESENTAÇÃO ENVIADA: 25/02/2025"}, {"date": "2026-04-30", "text": "Pedir pra falar com Gabriel e dizer que ele nao esta respondendo email."}, {"date": "2026-05-14", "text": "Vai retornar por telefone"}]},
+    {id:'p1018',title:'W.L. Gore',cidade:'',segmento:'Automotive',end:'04578-000',contato:'Cintia Di Napoli',tel:'11 5502-7811 / 956547713',email:'[cdinapol@wlgore.com](mailto:cdinapol@wlgore.com "‌")',linkedin:'https://www.linkedin.com/in/cintia-santos-di-napoli-2327558/](https://www.linkedin.com/in/cintia-santos-di-napoli-2327558/',obs:'',col:'followup',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-05-14", "text": "Telefone 11 - 55027811 - ocupado"}, {"date": "2026-05-14", "text": "só chama: 956547713"}]},
+    {id:'p1019',title:'GF Machining',cidade:'',segmento:'Industria',end:'04571-020',contato:'Marcel Garbelotti - Renato Baptista',tel:'(11) 5694-8322',email:'[marcel.garbelotti@georgfischer.com](mailto:marcel.garbelotti@georgfischer.com "‌")',linkedin:'https://www.linkedin.com/in/marcel-garbelotti-738648197',obs:'',col:'followup',status:'em_negociacao',due:'2026-05-23',timeline:[{"date": "2026-04-30", "text": "follow up email"}, {"date": "2026-05-14", "text": "Esta de férias, volta semana que vem"}]},
+    {id:'p1020',title:'Manitowoc',cidade:'',segmento:'Industria',end:'05095-035',contato:'Roberto Ota / Larissa',tel:'11 2162-2000',email:'[roberto.ota@manitowoc.com](mailto:roberto.ota@manitowoc.com "‌")',linkedin:'https://www.linkedin.com/in/roberto-ota/',obs:'',col:'followup',status:'proposta_enviada',due:'2026-06-10',timeline:[{"date": "2026-04-17", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-17", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-17", "text": "ULTIMO CONTATO: 25/02/2026"}, {"date": "2026-04-17", "text": "ULTIMA VISITA: 19/03/2026"}]},
+    {id:'p1021',title:'Aptar Embalagens',cidade:'',segmento:'Industria',end:'07750-020',contato:'Rafael Berlamino',tel:'11 98422080',email:'',linkedin:'',obs:'Já participamos do BID de desembaraço',col:'followup',status:'proposta_enviada',due:'2026-06-10',timeline:[{"date": "2026-04-30", "text": "Veririficar se tem alguma oportunidade"}, {"date": "2026-04-30", "text": "Perguntar se posso ligar"}]},
+    {id:'p1022',title:'Cirurgica Fernandes',cidade:'',segmento:'Industria',end:'06543-306',contato:'Lais',tel:'11 4152-0512',email:'[lais.afonso@cfernandes.com.br](mailto:lais.afonso@cfernandes.com.br "‌")',linkedin:'',obs:'',col:'followup',status:'proposta_enviada',due:'2026-06-10',timeline:[{"date": "2026-04-30", "text": "REVALIDAÇÃO BID, PARTICIPAR"}]},
+    {id:'p1023',title:'Forscher',cidade:'',segmento:'CHEMICAL',end:'05727-220',contato:'Alcy Nogueira',tel:'(11) 3746-1616',email:'[alcy.nogueira@forscher.com.br](mailto:alcy.nogueira@forscher.com.br "‌")',linkedin:'https://www.linkedin.com/in/alcy-nogueira-10320163',obs:'',col:'followup',status:'proposta_enviada',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 09/03/2026"}]},
+    {id:'p1024',title:'Saguaragi',cidade:'',segmento:'CHEMICAL',end:'04755-000',contato:'',tel:'',email:'[financeiro@saguaragi.com.br](mailto:financeiro@saguaragi.com.br "‌")',linkedin:'',obs:'',col:'followup',status:'proposta_enviada',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 27/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 27/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 09/03/2026"}, {"date": "2026-04-30", "text": "Verificar se eles ainda seguem somente com a parceria."}]},
+    {id:'p1025',title:'Megh Industria',cidade:'',segmento:'CHEMICAL',end:'04220-001',contato:'Paulo Britto Silva',tel:'(11) 2065-5555',email:'',linkedin:'https://www.linkedin.com/in/britopaulo/](https://www.linkedin.com/in/britopaulo/',obs:'',col:'followup',status:'proposta_enviada',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 09/03/2026"}, {"date": "2026-05-14", "text": "Eles nao me escutam"}]},
+    {id:'p1026',title:'Nivetec',cidade:'',segmento:'TECH',end:'02411-000',contato:'Leonardo Brito',tel:'(11) 2627-6600',email:'[leonardo.brito@nivetec.com.br](mailto:leonardo.brito@nivetec.com.br "‌")',linkedin:'https://www.linkedin.com/in/leocasbr',obs:'',col:'followup',status:'proposta_enviada',due:'2026-05-27',timeline:[{"date": "2026-04-08", "text": "Primeiro contato: 01/09/2025"}, {"date": "2026-04-08", "text": "Apresentação enviada: 05/09/2025"}, {"date": "2026-04-08", "text": "Ultimo contato: 20/03/2026"}, {"date": "2026-04-08", "text": "Ultima visita: 17/09/2025"}, {"date": "2026-04-08", "text": "ULTIMA VISITA"}, {"date": "2026-04-30", "text": "O que precisamos fazer para fechar, tem processos em andamento que podemos cotar?"}, {"date": "2026-05-07", "text": "Ele não estava quem atendeu foi a Jennifer falou que vai pedir pra ele retornar"}, {"date": "2026-05-21", "text": "eles nao conseguem me ouvir"}]},
+    {id:'p1027',title:'Wilo',cidade:'',segmento:'Industria',end:'13213-105',contato:'Paulo Ienne',tel:'(11) 2923-9422 (Direto)',email:'[paulo.ienne@wilo.com](mailto:paulo.ienne@wilo.com "‌")',linkedin:'https://www.linkedin.com/in/paulo-ienne',obs:'',col:'followup',status:'proposta_enviada',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 10/11/2025"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 11/12/2025"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 23/02/2026"}, {"date": "2026-04-30", "text": "REUNIAO AGENDADA"}]},
+    {id:'p1028',title:'ECIL TRADING',cidade:'',segmento:'Trading',end:'04551-080',contato:'Carlos Lopes',tel:'(11) 3202-6372',email:'[clopes@ecil-trading.com.br](mailto:clopes@ecil-trading.com.br "‌")',linkedin:'https://www.linkedin.com/in/carloshcl',obs:'',col:'followup',status:'proposta_enviada',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 15/08/2025"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 28/08/2025"}, {"date": "2026-04-08", "text": "ULTIMA VISITA: 19/12/2025"}, {"date": "2026-04-30", "text": "Pedi retorno"}, {"date": "2026-05-14", "text": "não estava no momento"}]},
+    {id:'p1029',title:'Melting Produtos',cidade:'',segmento:'Industria',end:'03105-005',contato:'Robson Cavalcanti',tel:'(11) 3385-2144',email:'[robson@melting.com.br](mailto:robson@melting.com.br "‌")',linkedin:'https://www.linkedin.com/in/robson-cavalcanti-b7599452',obs:'',col:'followup',status:'proposta_enviada',due:'2026-05-27',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 16/03/2026"}, {"date": "2026-04-30", "text": "Robson - tentar marcar visita para mostrar o diferencial"}, {"date": "2026-05-21", "text": "Só chama"}]},
+    {id:'p1030',title:'Yokohama TWS',cidade:'',segmento:'Industria',end:'06422-122',contato:'Luis Souza',tel:'',email:'[luis.souza@yokohama-tws.com](mailto:luis.souza@yokohama-tws.com "‌")',linkedin:'',obs:'',col:'followup',status:'proposta_enviada',due:'2026-05-27',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 25/02/2026"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 25/02/2026"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 16/03/2026"}, {"date": "2026-04-30", "text": "Charles esta tentando reagendar visita"}]},
+    {id:'p1031',title:'Tecnoluva',cidade:'',segmento:'Industria',end:'04364-030',contato:'Joao Luiz',tel:'27274435',email:'[joaoluiz@tecnoluva.com.br](mailto:joaoluiz@tecnoluva.com.br "‌")',linkedin:'https://www.linkedin.com/in/tecnoluva-joão-luiz-a2747723/](https://www.linkedin.com/in/tecnoluva-jo%C3%A3o-luiz-a2747723/',obs:'',col:'fechado',status:'fechado',due:'2026-05-23',timeline:[{"date": "2026-04-08", "text": "PRIMEIRO CONTATO: 24/07/2025"}, {"date": "2026-04-08", "text": "APRESENTAÇÃO ENVIADA: 24/07/2025"}, {"date": "2026-04-08", "text": "ULTIMO CONTATO: 13/03/2026"}]},
+    {id:'p1032',title:'Secur Comercial',cidade:'',segmento:'Industria',end:'02552-010',contato:'',tel:'',email:'',linkedin:'',obs:'',col:'fechado',status:'fechado',due:'2026-05-23',timeline:[]}];
+const cardsCont = [
+{id:'c2001',title:'VIDEOS E FOTOS APTO',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2002',title:'Canetinhas',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2003',title:'Video fronha',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2004',title:'Museu de cera',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2005',title:'Video Tripe',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2006',title:'Project pan',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2007',title:'GRAVAR VIDEO DE COISAS QUE COMPREI NA \"SHOPEE\" DO BRAS',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2008',title:'FAÇA VOCÊ MESMA PUFF PARA URSINHOS',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2009',title:'DECORAÇÃO',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2010',title:'SOLUÇÃO POR AMBIENTE',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2011',title:'MOSTRAR ANTES E DEPOIS DA REFORMA',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2012',title:'SOLUÇÕES',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2013',title:'PROJETOS',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2014',title:'SORVETE SEM AÇUCAR',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2015',title:'ATIVIDADES COM A BEBE',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2016',title:'CAMA COMPARTILHADA',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2017',title:'DESMAME',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2018',title:'ERROS DE PAIS DE PRIMEIRA VIAGEM',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2019',title:'LISTA DE COISAS QUE EU DISSE QUE NAO FARIAMOS COM A DUDA E FIZEMOS',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2020',title:'TREINO',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2021',title:'PRODUTOS QUERIDINHOS DONA DE CASA',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2022',title:'TESTANDO ROTINA QUE  CHAT GPT CRIOU PRA MIM',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2023',title:'DICAS COMO SE LIVRAR DA PROCRASTINAÇÃO',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2024',title:'VIDEO DEPOIMENTO ANDERSON TERAPEUTA',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2025',title:'QUEM SOU EU INSTA',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2026',title:'APRESENTAÇÃO CREATIFY',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2027',title:'PORTIFOLIO',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[{"date": "2026-04-05", "text": "Mostrando o Trello"}]},
+    {id:'c2028',title:'IDEIAS DE CONTEUDO - GERAL',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'- Mitps e verdades - Desminta uma opinião comum no seu nicho - Erro comum: O maior erro que as pessoas cometem - Antes e Depois: mostre uma transformação - Dicas rapidas: 3 coisas que ninguem te conta sobre - Teste/ desafio: Mostre um metodo e desafie o publico a testar - O que eu faria s começasse do zero - Bastidores: mostre como voce faz no seu nicho - COntação de historia: conte uma experiencia e o que prendeu - Ferramentas uteis: 3 ferramentas que todo mundo deveria usar em - Depoimentos: P',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2029',title:'FANTASIAS - FEITAS POR MIM',tipo:'ideia',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2030',title:'COCA COLA -  Retornavel',tipo:'gravar',etiqueta:'',origem:'Brandlovers',due:'2026-05-23',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'### CENA 1 — GANCHO (0–3s)  **📸 Cena:** Você na cozinha, ingredientes na bancada ou geladeira aberta. A Coca-Cola Retornável 2L aparece em cena, fechada, com a tampa verde visível.  **🎙 Fala:** _\"Hoje eu tô no modo refeição rápida — sem enrolação e sem gastar mais do que precisa.\"_  **📝 Texto na tela:** `Rotina corrida = escolhas inteligentes`  > ✏️ _Mudança: retirei o \"tem dia que\" — começa com mais energia, prende mais no gancho._  ---  ### 🎥 CENA 2 — PREPARO DA REFEIÇÃO  **📸 Cena:** Cortes rá',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2031',title:'BATOM SACE LADY',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# VÍDEO 1 — “ISSO NÃO É SÓ UM BATOM”  ### 🎬 GANCHO VISUAL  Você passa o produto na boca… e depois mostra ele deslizando na mão igual balm/skincare.  ### 🗣 FALA  “Eu achei que isso aqui era só um batom… até perceber que minha boca não ficou seca nem depois de horas.”  ### 😬 PROBLEMA  Mostra:  - boca craquelada - batom acumulando - linhas secas  ### ✨ SOLUÇÃO  Close:  - textura cremosa - brilho confortável - aplicação fácil  ### 🎁 BENEFÍCIO  “É literalmente lip balm + batom ao mesmo tempo.”  ### 📣',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2032',title:'APICE COSMETICOS - Box 1',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'GANCHOS PRA STORIES (com cabelo solto)  1. “Meu cabelo tava BONITO… até eu descobrir isso aqui.”    👉 Já começa balançando o cabelo. 2. “O brilho disso aqui não é normal.”    👉 Luz batendo + close. 3. “Parece cabelo de salão, mas foi em casa.”    👉 Passa a mão lentamente no comprimento. 4. “Isso aqui deixa meu cabelo com cara de rico.”    👉 ÓTIMO pra óleo/spray/máscara. 5. “Eu nunca recebi tanto elogio no meu cabelo.”    👉 Faz cara de quem tá lembrando. 6. “O toque desse cabelo depois disso aqui',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2033',title:'YESSTYLE',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'## **🎬 CENA 1 – GANCHO (CURIOSIDADE + TENDÊNCIA)**  **📸 Visual:** **Você segurando o produto + expressão curiosa**  **🎙 Fala:** **“Eu tava OBCECADA pra testar skincare coreano… mas principalmente isso aqui…”**  **👉 (mostra o produto)**  **“retinal.”**  ---  ## **🎬 CENA 2 – QUEBRA DE EXPECTATIVA**  **📸 Visual:** **Close no rosto**  **🎙 Fala:** **“Porque ninguém fala tanto dele quanto do retinol… mas ele é tipo a versão mais potente.”**  **👉 (olhar de “descobri algo”)**  ---  ## **🎬 CENA 3 – PROBL',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2034',title:'CAPA DA SI',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2035',title:'UNBOXING PANTENTE',tipo:'revisao',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2036',title:'204 | Seu pendrive no Google Drive (dica).',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2037',title:'D BIANCO - DIA DAS MÃES - R$200,00',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:200.0,pago:false,col:'done',drive:'',obs:'## ROTEIRO FINAL – DIA DAS MÃES (VERSÃO FORTE)  🎯 **Ideia central:** O cabelo vira **ponte de afeto entre mãe e filha**  ---  ### 🎥 CENA 1 – G (GANCHO EMOCIONAL FORTE)  📸 Close no cabelo dela + mão da filha mexendo nos cachos  🎬 Sem mostrar o rosto primeiro  🗣 (voz suave, íntima) “Ela ama brincar no meu cabelo…”  ---  ### 🧠 CENA 2 – G (QUEBRA EMOCIONAL)  📸 Revela o rosto da mãe olhando pra filha  🗣 “E eu nunca tive isso com a minha mãe.”  💥 **Aqui entra profundidade. Isso conecta MUITO.**  ---  ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2038',title:'Oh my flow - REELS 2',tipo:'publicado',etiqueta:'afiliado',origem:'Ella',due:'2026-04-09',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'2 REELS POR MÊS 2 stories semanais  cupom: VALBARROS5  [https://drive.google.com/drive/u/1/folders/1nhE_0qRfWtRjCrVNddWiPF6_6bJ4IlFb](https://drive.google.com/drive/u/1/folders/1nhE_0qRfWtRjCrVNddWiPF6_6bJ4IlFb \"smartCard-inline\")  [https://b4you.com.br/](https://b4you.com.br/ \"smartCard-inline\")',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2039',title:'Oh my flow -  REELS 1',tipo:'publicado',etiqueta:'afiliado',origem:'Ella',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'2 REELS POR MÊS 2 stories semanais  cupom: VALBARROS5  [https://drive.google.com/drive/u/1/folders/1nhE_0qRfWtRjCrVNddWiPF6_6bJ4IlFb](https://drive.google.com/drive/u/1/folders/1nhE_0qRfWtRjCrVNddWiPF6_6bJ4IlFb \"smartCard-inline\")  [https://b4you.com.br/](https://b4you.com.br/ \"smartCard-inline\") ROTEIRO NARRAÇÃO (51s) — Oh My Flow  ### 🎥 CENA 1 (0–3s) — GANCHO  📦 Abrindo a caixa / reação curiosa  🗣️ “Eu não sei vocês… mas na TPM eu viro OUTRA pessoa.”  ---  ### 🎥 CENA 2 (3–8s) — DOR REAL  📦 Tir',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2040',title:'12 MIN',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2041',title:'SEMINÁRIO DAS MÃES',tipo:'publicado',etiqueta:'',origem:'',due:'2026-04-25',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'[https://www.sympla.com.br/evento/12o-seminario-de-maes/2934834?d=MARINATAYNA15](https://www.sympla.com.br/evento/12o-seminario-de-maes/2934834?d=MARINATAYNA15 \"smartCard-inline\")  Divulgar link nos stories Fazer acompanhamento do evento via stories',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2042',title:'DOMIDONA - Bota over - R$100,00',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:100.0,pago:false,col:'done',drive:'',obs:'🎬 ROTEIRO COMPLETO (FALA + AÇÃO + VISUAL)  🎥 CENA 1 — GANCHO (0–3s)  🎙 Fala: “Ninguém nunca te contou isso aqui na internet…”  🎬 Ação: 	•	Você já entra em cena segurando a bota na mão 	•	Olha pra câmera com expressão de “descoberta”  🎥 Visual: 	•	Close no seu rosto + bota meio aparecendo 	•	Fundo neutro 	•	Texto na tela: “ninguém fala isso sobre bota over”  ⸻  🎥 CENA 2 — PROMESSA  🎙 Fala: “…mas essa bota da Domidona mudou tudo o que eu achava sobre looks de inverno.”  🎬 Ação: 	•	Corte rápido → v',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2043',title:'TUFF CHA BRANCO',tipo:'publicado',etiqueta:'ugc',origem:'Noovid',due:'2026-03-05',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'Roteiro Enviado  ROTEIRO UGC Linha Tuff Chá Branco | Perfumes Inspirados por Provanza \\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_ CENA: Abro o armário. Movimento as roupas. Close no meu rosto sentindo o cheiro. FALA: Tem cheiro que não é só cheiro, é sensação de casa em ordem. \\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_ CENA: Chegando com o cesto de roupas para lavar e o amaciante junto dentro do cesto. Colocando as roupas',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2044',title:'Confort segredos de Bridgestone',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'ROTEIRO NARRADO (ESTILO LADY WHISTLEDOWN)  Inspirado em Bridgerton Formato: narração + cenas sem fala direta Duração: 30–45s  ⸻  🎞️ CENA 1 — ABERTURA (0–4s)  VISUAL: Close de tecido elegante + luz entrando pela janela AÇÃO: Movimento lento (tecido ou você segurando a peça)  NARRAÇÃO:  “Caro e gentil leitor… a temporada mais perfumada acaba de começar.”  ⸻  🎞️ CENA 2 — APRESENTAÇÃO (4–10s)  VISUAL: Produtos bem posicionados (estético, fundo clean) AÇÃO: Você toca nos produtos com delicadeza  NARR',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2045',title:'ESPAÇO LASER',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'Voucher: BWN5VSXQT4',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2046',title:'HELLMANS',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'# 🎬 ROTEIRO – HAMBÚRGUER DO SOFÁ  ⏱ 30–40s 📱 TikTok 🎭 Estilo: amigo ensinando receita  ---  # 🎬 CENA 1 — GANCHO (0–3s)  📸 **Imagem:** Close do hambúrguer pronto sendo aberto com molho escorrendo.  🎙 **Fala:** “Vou te ensinar a fazer um lanche **super fácil** pra assistir o festival do sofá.”  📍 Texto na tela **“lanche de sofá nível máximo”**  ---  # 🎬 CENA 2 — COMEÇO DA RECEITA  📸 **Imagem:** Mostra a carne indo para a airfryer.  🎙 **Fala:** “Primeiro: hambúrguer na airfryer… porque aqui é prati',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2047',title:'DOMIDONA SHOES',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'# 🎬 ROTEIRO FINAL – DOMIDONA  Formato: Reels Orgânico Collab Tom: Inspirador + Confiante + Real Duração média: 35–45s  ---  ## 🎥 CENA 1 – GANCHO FORTE (3 primeiros segundos decisivos)  **VISUAL:** Você já de salto, agachando para pegar um ursinho no chão. Plano lateral ou levemente de trás. Luz natural.  **TEXTO NA TELA (grande):** “Ninguém me avisou que eu teria medo de usar salto depois de virar mãe.”  **ÁUDIO (voz natural, calma):** “Ninguém me avisou que eu teria medo de usar salto depois de',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2048',title:'EU TENHO A FORÇA - BHOTANICO COSMESTICOS',tipo:'publicado',etiqueta:'ugc',origem:'Noovid',due:'2026-03-05',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'# 🎬 ROTEIRO ADAPTADO – GGPTSBPC  Linha: **Eu Tenho a Força – Bothânico Cosméticos** Objetivo: Anúncio Dia da Mulher Tom: Íntimo, real, emocional (não publicitário)  ---  ## 🎥 G – GANCHO VISUAL (Close + vulnerabilidade real)  **Cena:** Você no banheiro, cabelo preso bagunçado, bebê chorando ao fundo (som suave, não exagerado). Você fecha os olhos por 1 segundo, respira.  **Fala (olhando direto pra câmera):** “Sabe aquela coisa que dizem que mulher aguenta tudo?”  (pausa)  “Eu já ouvi isso muitas ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2049',title:'Gel de sombrancelha sacy lady',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'## ROTEIRO UGC – TUTORIAL + PORTFÓLIO  **Produto:** Gel de Sobrancelha Sace Lady **Formato:** UGC tutorial (orgânico, reutilizável em ads e portfólio) **Duração:** 20–30s  ---  ### 🎬 CENA 1 — GANCHO VISUAL (0–3s)  **Visual:** Close no rosto, sobrancelha natural/desarrumada, você se olha no espelho. **Fala:** “Se sua sobrancelha nunca fica no lugar… essa parte é pra você.”  👉 _Legenda discreta:_ “rotina real”  ---  ### 🎬 CENA 2 — CONTEXTO DE VIDA (3–6s)  **Visual:** Você arruma a sobrancelha com ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2050',title:'kit bonacour',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'# 🎬 ROTEIRO FINAL — ANTES E DEPOIS  ## Kit **Schwarzkopf BC Repair Rescue**  🎯 Objetivo: **Portfólio | Beleza | Prova visual real** ⏱️ Duração final: **20–25 segundos**  ---  ## 🎥 TAKE 1 — ANTES (0–3s)  **IMAGEM**  - Cabelo seco - Solto - Sem escova, sem chapinha - Luz natural - Mesmo enquadramento que o depois  **EDIÇÃO**  - Corte seco - Sem música nos primeiros segundos  **TEXTO NA TELA (opcional, discreto)**  > Antes  ❌ Sem fala 👉 O cabelo precisa “falar sozinho”  ---  ## 🎥 TAKE 2 — PROCESSO ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2051',title:'PROTETOR SOLAR TIMMI',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'## 🎥 VERSÃO 1 — REVIEW COM **NARRAÇÃO EM OFF** (estética premium)  **Produto:** Protetor Solar **Timmi Beauty** **Clima:** Clean, calmo, confiável **Uso:** Portfólio + TikTok Shop  ### 🎬 ROTEIRO (voz em off)  **IMAGEM 1 (0–3s)** _Ação:_ Close do produto apoiado na penteadeira, luz natural. **OFF:** “Testei esse protetor solar da Timmi Beauty e esse é um review sincero.”  **IMAGEM 2 (3–7s)** _Ação:_ Mostra a embalagem de perto, girando devagar. **OFF:** “A fórmula tem centella asiática, que traz ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2052',title:'PROTETOR SOLAR NEUTROGENA',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'# 🎬 ROTEIRO FINAL — ARRUME-SE COMIGO  ## Produto: **Protetor Solar Neutrogena (sem cor)**  🎯 Objetivo: **Portfólio | Beleza | Rotina real** ⏱️ Duração final: **25–30 segundos**  ---  ## 🎥 TAKE 1 — ABERTURA (0–3s)  **IMAGEM**  - Você abrindo a cortina OU amarrando o cabelo - Rosto limpo ou maquiagem mínima - Luz natural  **EDIÇÃO**  - Corte suave - Trilha bem leve começa aqui  **TEXTO NA TELA (opcional, pequeno)**  > Arrume-se comigo  ❌ Sem fala  ---  ## 🎥 TAKE 2 — CONTEXTO DE ROTINA (3–7s)  **IM',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2053',title:'Timmi creme depilatorio',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'**ROTEIRO 1 — “O ativo queridinho do skincare asiático”**  Objetivo: Vender pelo diferencial do ativo + manutenção do laser  Formato: Storytelling curto + demonstração  Cena 1 – Gancho (0–3s)  Close na perna  “Sabe qual é o ativo queridinho do skincare asiático?”  Cena 2 – Revelação rápida  Você mostra o produto  “Centella asiática. E ela tá nesse creme depilatório.”  Cena 3 – Dor real (laser)  Aponta a perna  “Eu faço laser, então preciso de algo que mantenha sem irritar.”  Cena 4 – Aplicação  ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2054',title:'Gel Dental Oi White',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'**ROTEIRO 1 — STORYTIME SENSORIAL (identificação emocional)**  Dia 1  Foco: memória + sensação  **CENA 1 — GANCHO (0–3s)**  Imagem: caixa abrindo  Texto:  “Sabe quando você come algo MUITO gostoso…”  **CENA 2 — DOR REAL (3–7s)**  Imagem: pasta ainda fechada na pia  Texto:  “e não quer escovar os dentes depois…”  “só pra não estragar o gosto?”  **CENA 3 — VIRADA (7–10s)**  Imagem: abrindo a tampa  Texto:  “Eu resolvi isso assim:”  **CENA 4 — SABOR (10–16s)**  Imagem: pasta na escova (close)  Text',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2055',title:'KOMBUCHA',tipo:'publicado',etiqueta:'ugc',origem:'Noovid',due:'2026-02-07',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'## 🎥 VÍDEO 1 — Hook + Problema + Solução (ATUALIZADO)  **Sabor:** 🍍 Abacaxi com Hortelã **Contexto:** Pós-yoga, à beira da piscina **Duração:** ~25–30s  ---  ### 🌊 CENA 1 — HOOK VISUAL (0–3s)  **AÇÃO:** Você termina a postura de yoga, senta **no tapete**, respira fundo. A garrafa da Bewow gelada está ao seu lado, com gotinhas de água.  **FALA:** “Depois do yoga, eu só quero uma coisa: refrescar sem jogar açúcar no corpo.”  ---  ### 😩 CENA 2 — PROBLEMA (4–8s)  **AÇÃO:** Você pega a garrafa ainda ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2056',title:'Papa bolinhas',tipo:'publicado',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2057',title:'DOVE UP - GLOW',tipo:'publicado',etiqueta:'ugc',origem:'MIS',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'PERMUTA  ---  BRIEFING:',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2058',title:'PÓ SACE LADY',tipo:'publicado',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2059',title:'PANTENE - BOND REPAIR',tipo:'publicado',etiqueta:'ugc',origem:'MIS',due:'2026-01-27',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'Cache: 350,00  ---  Briefing:',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2060',title:'DARROW - SABONETE FACIAL',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'Gente esse sabonete me surpreendeu muito positivamente. Eu estava tendo muitas espinhas recorrentemente, e ele me ajudou nao só em previnir mas em secar as espinhas existentes. A textura em gel é bem leve e o cheiro muito gostoso e suave. Super recomendo, ele agora ja faz parte da minha rotina de skincare.  [https://drive.google.com/drive/folders/1f4Cdd3FpqbM4qmTI0C6BW8TVEtF1UIWA?usp=sharing](https://drive.google.com/drive/folders/1f4Cdd3FpqbM4qmTI0C6BW8TVEtF1UIWA?usp=sharing \"smartCard-inline\")',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2061',title:'ELSEVE BOND - REPAIR',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'[https://drive.google.com/drive/folders/13ZA_qTk3D--9GKj02VuOu38FdBXZxFhO?usp=sharing](https://drive.google.com/drive/folders/13ZA_qTk3D--9GKj02VuOu38FdBXZxFhO?usp=sharing \"smartCard-inline\")  Avaliação enviada no site da insiders:  ”Eu amei a linha bond repair da Elseve. O pré shampoo realmente prepara o cabelo para receber o shampoo, fora que o shampoo é mega hidratante, durante a lavagem você já sente a sensação de limpeza porém sem ressacar. O condicionado deixa os fios tão macios que foi su',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2062',title:'NIACINAMIDA - SIMPLE ORGANIC',tipo:'publicado',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'Amostra reembolsavel caso tenha 3 vendas pelo meu link.  [https://drive.google.com/file/d/1GwjRnfx-0kiYIzDDcy-PH3PYlUVs7YQR/view?usp=sharing](https://drive.google.com/file/d/1GwjRnfx-0kiYIzDDcy-PH3PYlUVs7YQR/view?usp=sharing \"smartCard-inline\")',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2063',title:'LISO DOS SONHOS LOREAL',tipo:'publicado',etiqueta:'ugc',origem:'Squid',due:'2026-02-13',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'CACHE: 440,00  ‌  [https://drive.google.com/file/d/1au6Zi3dKy1VhzJ59JUY3V-opQUtNR-0Z/view?usp=sharing](https://drive.google.com/file/d/1au6Zi3dKy1VhzJ59JUY3V-opQUtNR-0Z/view?usp=sharing \"smartCard-inline\")  ‌  Olá, cacheadas! Você foi selecionada para a mais nova campanha de Grupo L’Oréal   ‌  A linha Liso dos Sonhos, já é a nova querida do momento e a novidade é que ela não serve somente para cabelos lisos e alisados.  ‌  Por isso, se você é cacheada, ama testar produtos e acredita na importânc',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2064',title:'HELLMANNS',tipo:'publicado',etiqueta:'ugc',origem:'MIS',due:'',payDate:'',valor:650.0,pago:false,col:'done',drive:'',obs:'Cache 300,00   [https://drive.google.com/file/d/15al1d5sn37gKLLPkW1UVAggC3etZl9n2/view?usp=sharing](https://drive.google.com/file/d/15al1d5sn37gKLLPkW1UVAggC3etZl9n2/view?usp=sharing \"smartCard-inline\")  ---  Briefing:  Oiee, tudo bem? Aqui é a Nat do time de atendimento MIS, e vou seguir com você na campanha de Hellmann\'s – Receitas Natalinas 💜  Antes de trazer os direcionais para essa campanha, gostaria de informar que  os pagamentos dentro do MIS só serão feitos para contas PJ, ou seja, você ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2065',title:'ACER',tipo:'publicado',etiqueta:'',origem:'Squid',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'PREMIAÇÃO: TALVEZ  [https://drive.google.com/file/d/1deG4wtB3bp9UfNqYD5wnKNbFnc28nmjT/view?usp=sharing](https://drive.google.com/file/d/1deG4wtB3bp9UfNqYD5wnKNbFnc28nmjT/view?usp=sharing \"smartCard-inline\")  ‌  ---  Briefing:  [https://docs.google.com/presentation/d/1KCzQAF0JcpTuST-H8zXg4IJRGgFDYeDXf0UjIhwhMqU/edit?slide=id.g3723dfd471e_0_12#slide=id.g3723dfd471e_0_12](https://docs.google.com/presentation/d/1KCzQAF0JcpTuST-H8zXg4IJRGgFDYeDXf0UjIhwhMqU/edit?slide=id.g3723dfd471e_0_12#slide=id.g37',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2066',title:'DOWNY - FIXA PERFUME',tipo:'publicado',etiqueta:'ugc',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'PREMIAÇÃO TALVEZ  [https://drive.google.com/drive/folders/1ueRqje7M04YvYpRzsQg4baGdqNUJQ4vs?usp=sharing](https://drive.google.com/drive/folders/1ueRqje7M04YvYpRzsQg4baGdqNUJQ4vs?usp=sharing \"smartCard-inline\")  ‌  ---',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2067',title:'CASA VOGUE',tipo:'publicado',etiqueta:'ugc',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2068',title:'MERCADO LIVRE',tipo:'publicado',etiqueta:'ugc',origem:'MIS',due:'',payDate:'',valor:300.0,pago:false,col:'done',drive:'',obs:'CACHE DE R$300,00 PLATAFORMA MIS  [https://drive.google.com/file/d/1tqXxp6-6W0ppYPmlhlvcXJWsuv4cLmEu/view?usp=drive_link](https://drive.google.com/file/d/1tqXxp6-6W0ppYPmlhlvcXJWsuv4cLmEu/view?usp=drive_link \"smartCard-inline\")  ---  Briefing:  Boa tarde, tudo bem?  Aqui é a Nath do time de Atendimento do MIS, vou seguir com a campanha Operação Queima de Estoque - Mercado Livre com o perfil \\@val_barros 📦🎥  Só confirmando, o escopo contratado é: 1 Reels  Antes de trazer os direcionais para essa ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2069',title:'Aspirador',tipo:'publicado',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'[https://www.tiktok.com/@val_barros/video/7566988391456328980](https://www.tiktok.com/@val_barros/video/7566988391456328980 \"smartCard-inline\")',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2070',title:'DOCUMENTAÇÃO EMPRESA - MEI',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'CNPJ: 43.520.407/0001-52  IE: 131.968.709.111',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2071',title:'SITES PARA CAMPANHAS',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'[https://comudelas.com/](https://comudelas.com/ \"smartCard-inline\")  [https://www.publination.com.br/home](https://www.publination.com.br/home \"smartCard-inline\")  [https://www.instagram.com/publi.nation/](https://www.instagram.com/publi.nation/ \"smartCard-inline\")  [https://creafy.io/](https://creafy.io/ \"smartCard-inline\")  [https://squadsociallab.com.br/](https://squadsociallab.com.br/ \"‌\")  [https://wake.tech/wake-creators?utm_source=google&utm_medium=cpc&utm_campaign=search_va_creators_fund',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2072',title:'CONTEUDO - DRIVE',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'[https://drive.google.com/drive/folders/1KhUkHIqCCN4rrlF5Yq7BmUwEq6p6ecvf?usp=sharing](https://drive.google.com/drive/folders/1KhUkHIqCCN4rrlF5Yq7BmUwEq6p6ecvf?usp=sharing \"smartCard-inline\")',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2073',title:'FINANCEIRO',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'[https://docs.google.com/spreadsheets/d/1T0kjiLTXAtcRWY0rWvfIB2sPhXFR1EzGHNkdMFpKsYw/edit?usp=drive_link](https://docs.google.com/spreadsheets/d/1T0kjiLTXAtcRWY0rWvfIB2sPhXFR1EzGHNkdMFpKsYw/edit?usp=drive_link \"smartCard-inline\")',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2074',title:'ROTEIRO UNBOXING',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'“Vamos abrir isso juntas porque eu tô curiosa.  Chegou aqui e eu ainda nem abri, então reação real.  (abrindo)  Olha isso… Primeira impressão: muito caprichado.  A primeira coisa que eu notei foi… A textura/cheiro parece…  Isso aqui já vai direto pra minha rotina de [x].  Primeiras impressões: promissor.”  ---  **“Abrindo comigo”**  opção perfeita pro seu posicionamento:  > **“Vamos abrir isso juntas porque eu tô curiosa.”**  ## O PACOTE (3–6s)  Mostre antes de abrir.  Close na caixa/sacola.  Fa',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2075',title:'ROTEIRO PADRÃO TIKTOK',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'“Se você sofre com [problema], olha isso.  Eu achei isso no TikTok Shop e precisei testar.  (aplica / usa)  A primeira coisa que eu notei foi… Na prática ele… E o que mais gostei foi…  Sinceramente? Pra quem quer [benefício], vale muito.  Tá aqui no TikTok Shop se você quiser ver.”  ---  “Minha maquiagem nunca durava até eu testar isso.” “Minha casa parecia limpa mas não cheirosa… até isso.” “Como mãe, qualquer coisa que economize tempo eu testo.”  ---  Sempre incluir:  ✅ abrir embalagem ✅ som r',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2076',title:'BELEZA -  1',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'### FORMATOS ESSENCIAIS  ✔ Tráfego ✔ Review / depoimento ✔ Tutorial ✔ Antes e depois ✔ Sensorial / estético ✔ Arrume-se comigo  ### O QUE VOCÊ JÁ TEM  - Elseve (tráfego / review) - Pantene Molecular (review + estético) - TikTok Shop skincare (tráfego) - Niacinamida (ajustável) - Gel sobrancelha (ajustável) - Creme depilatório (ajustável)  ### O QUE GRAVAR AGORA (3 VÍDEOS FECHAM O NICHO)  1️⃣ **Antes e Depois forte** (cabelo OU pele) 2️⃣ **Arrume-se comigo + produto** 3️⃣ **Sensorial sem fala (es',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2077',title:'CASA - 2',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'### FORMATOS IDEAIS  ✔ Vlog / rotina ✔ Sensorial ✔ ASMR ✔ Review leve  ### O QUE VOCÊ JÁ TEM  - Downy campanha - Downy stories  ### O QUE GRAVAR AGORA (2 VÍDEOS)  1️⃣ **Rotina real (lavar / dobrar / cheiro)** 2️⃣ **Sensorial/ASMR (som + textura)**',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2078',title:'MATERNIDADE - 5',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'## 👶 MATERNIDADE (meta: 2 vídeos)  ⚠️ Aqui é **imagem**, não venda agressiva.  ### FORMATOS SEGUROS  ✔ Lifestyle ✔ Vlog experiência  👉 Sem review pesado. 👉 Sem “mãe influencer”.  Serve para:  - humanizar - ampliar leque - não confundir posicionamento',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2079',title:'RECEITAS - 3',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'## 🍽️ RECEITAS (meta: 3–4 vídeos)  ### FORMATOS QUE FUNCIONAM  ✔ Tutorial ✔ Lifestyle ✔ Trend ✔ Vlog curto  ### O QUE VOCÊ JÁ TEM  - Hellmann’s (âncora perfeita)  ### O QUE GRAVAR AGORA  1️⃣ Receita simples do dia a dia 2️⃣ Trend de receita rápida 3️⃣ Vlog “rotina + comida”  👉 Não precisa inventar nada gourmet.',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2080',title:'FITNESS E BEM ESTAR - 4',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'## FITNESS & BEM-ESTAR (meta: 3 vídeos)  ### FORMATOS IDEAIS  ✔ Lifestyle ✔ Vlog / rotina ✔ Review  ### O QUE VOCÊ JÁ TEM  - Kombucha campanha - Unboxing kombucha  ### O QUE GRAVAR  1️⃣ Rotina de bem-estar (manhã ou tarde) 2️⃣ Uso do produto integrado à rotina 3️⃣ Lifestyle (sem fala)',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2081',title:'EXPERIENCIA - 6',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'## EXPERIÊNCIA / VIAGEM (meta: 2 vídeos)  ### FORMATOS  ✔ Viagem / experiência ✔ Sensorial / estético  Você já tem:  - Casa Vogue - Dopamine Land (esse fica fora do comercial, mas ok para imagem)  👉 Use como **bloco final** do portfólio.',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2082',title:'CHECK LIST MATERNIDADE',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2083',title:'CHECK LIST - CASA',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2084',title:'CHECK LIST - BELEZA',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2085',title:'INSCRIÇÃO:',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'Me ajude a criar um pitch para inscrição de campanha na plataforma.  Meu ponto forte:  Sobre o produto:  Sobre a empresa:  Briefing:',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2086',title:'NOTA FISCAL DOMIDONA',tipo:'urgente',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2087',title:'TIRAR FOTO PARA PORTIFOLIO',tipo:'roteiro',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2088',title:'CMCLAB',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'3 Stories  e 1 reels. 4 produtos e 15% comissão',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2089',title:'FTW',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2090',title:'AMAZONICO',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2091',title:'UNOPAR',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2092',title:'AP GRINGO',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2093',title:'PRECIARTS',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2094',title:'OR EYER',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2095',title:'LUX',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2096',title:'BARBOUS',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2097',title:'Q70',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2098',title:'SALLVE',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2099',title:'MARMITAS',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2100',title:'CABIDE',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2101',title:'SIMPLE',tipo:'aguard_produto',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2102',title:'AURA BEAUTY',tipo:'roteiro',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2103',title:'PHURA',tipo:'roteiro',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2104',title:'GARNIER - Hidratante',tipo:'roteiro',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2105',title:'LYNV',tipo:'roteiro',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2106',title:'MATERNA - R$480,00',tipo:'roteiro',etiqueta:'',origem:'MIS',due:'2026-05-23',payDate:'',valor:480.0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2107',title:'APICE COSMETICOS - Box 2',tipo:'roteiro',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2108',title:'BOX SCARLETT',tipo:'roteiro',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'[https://www.canva.com/design/DAHItbdJzF8/R99SM0F4sU8CuEDBmJy6tQ/view?utm_content=DAHItbdJzF8&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=he6d4e0f5ee#12](https://www.canva.com/design/DAHItbdJzF8/R99SM0F4sU8CuEDBmJy6tQ/view?utm_content=DAHItbdJzF8&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=he6d4e0f5ee#12 \"smartCard-inline\")',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2109',title:'Protetor solar mustella',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# 🎥 ROTEIRO UGC – Rotina Noturna da Bebê | Kit Mustela  **Duração:** 25–35s **Estilo:** rotina real de mãe **Contexto:** pós-banho antes de dormir  ---  ## 🎬 CENA 1 – GANCHO (3s)  📸 **Cena:** bebê enrolada na toalha após o banho  🗣 **Fala:** “Depois de um dia inteiro no sol… nossa rotina noturna começa assim.”  ---  ## 🎬 CENA 2 – CONTEXTO  📸 **Cena:** você secando a bebê ou colocando pijaminha  🗣 **Fala:** “Banho quentinho, pijama… e agora a parte que eu mais amo: cuidar da pele dela.”  ---  ## ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2110',title:'box scarllet',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# Roteiro 1 — “Vale a pena?”  **GANCHO**  “Eu pago por essa beauty box todo mês… mas será que vale mesmo a pena?”  **CENA**  Mostra a caixa fechada.  **UNBOXING**  “Vamos abrir a box desse mês.”  Mostra os produtos um por um.  “Já estou vendo um sérum… um hidratante… e isso aqui eu nunca testei.”  **PRIMEIRA IMPRESSÃO**  Testa na mão.  “Esse sérum parece super leve.”  “Esse hidratante tem um cheiro muito bom.”  **DESTAQUE**  “Esse aqui foi o produto que mais me chamou atenção.”  **CTA**  “Se qui',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2111',title:'CHOCOWAFER - MAIS MU',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# 🎬 10 ROTEIROS — CHOCOWHEYFER MAIS MU (TikTok Shop)  Produto: Chocowheyfer Mais Mu — Chocolate Objetivo: conversão + desejo + snack fitness gostoso + rotina saudável sem cara de dieta Pontos fortes: ✅ wafer proteico ✅ chocolate ✅ 6g proteína ✅ snack rápido ✅ vibe “docinho sem culpa”  ---  # ROTEIRO 1 — “isso aqui NÃO parece fitness”  ## 🎥 CENA 1 — GANCHO  (abre o wafer e quebra no microfone)  🗣️ “Isso aqui NÃO tem cara de produto fitness.”  TEXTO: “e foi isso que me ganhou”  ---  ## 🎥 CENA 2 — ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2112',title:'WHEY - MAIS MU',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# 10 ROTEIROS — WHEY MAIS MU BAUNILHA (TikTok Shop)  Produto: Whey Protein Concentrado Mais Mu — Baunilha Objetivo: conversão + desejo + mostrar sabor/cremosidade + rotina fitness real Pontos fortes: ✅ 20g proteína ✅ zero adição de açúcar ✅ cremoso ✅ gosto de sobremesa ✅ saudável sem cara de “fitness triste”  ---  # ROTEIRO 1 — “o whey que parece milkshake”  ## 🎥 CENA 1 — GANCHO  (batendo o whey no liquidificador)  🗣️ “Isso aqui NÃO parece whey.”  TEXTO: “parece sobremesa”  ---  ## 🎥 CENA 2 — PR',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2113',title:'CREATINA - MAIS MU',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# 🎬 10 ROTEIROS — CREATINA MAIS MU PERFORMANCE PINK LEMONADE  Produto: Creatina Monohidratada +Mu Performance Objetivo: TikTok Shop + conversão + desejo + quebrar objeção sobre creatina ruim Diferenciais fortes: ✅ sabor pink lemonade ✅ zero calorias ✅ sem textura arenosa ✅ mistura fácil ✅ aesthetic fitness ✅ combina com Exquenta  ---  # ROTEIRO 1 — “creatina com gosto BOM existe”  ## 🎥 CENA 1 — GANCHO  (fazendo cara de trauma segurando outra creatina)  🗣️ “Quem inventou creatina com gosto de are',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2114',title:'PRÉ TREINO - MAIS MU',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# 🎬 10 ROTEIROS — EXQUENTA PRÉ-TREINO MAIS MU (TikTok Shop)  Produto: Pré-Treino Exquenta Pink Lemonade Objetivo: Conversão + TikTok Shop + desejo + identificação Público: pessoas que treinam cansadas, sem energia, odeiam pré-treino com gosto ruim e querem disposição real sem sensação “craqueada”.  ---  # ROTEIRO 1 — “eu achei que todo pré-treino tinha gosto ruim”  ## 🎥 CENA 1 — GANCHO  (abrindo a caixa e fazendo cara desconfiada)  🗣️ “Eu jurava que pré-treino tinha que ter gosto de remédio…”  T',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2115',title:'LIONhair - Gleicepontes',tipo:'editar',etiqueta:'afiliado',origem:'Ella',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'🎬 1. TOPO DE FUNIL (ATRAÇÃO)  👉 Objetivo: chamar atenção + identificação (sem vender direto)  ⸻  🎬 CENA 1 – GANCHO  📸 Visual: Close no cabelo meio opaco + unha fraca 🎬 Ação: Você olhando no espelho, mexendo no cabelo 🎙 Fala:  “Você já sentiu que seu cabelo tá sem vida… e sua unha quebrando por qualquer coisa?”  ⸻  🎬 CENA 2 – IDENTIFICAÇÃO  📸 Visual: Escova com alguns fios + unha lascada 🎬 Ação: Mostrar detalhes 🎙 Fala:  “Não é nada absurdo… mas também não tá bonito como antes, sabe?”  ⸻  🎬 CENA ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2116',title:'LIONsleep - Gelice pontes',tipo:'editar',etiqueta:'afiliado',origem:'Ella',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'ROTEIRO 1 — TOPO DE FUNIL (DESCoberta)  🎯 Objetivo: identificação + parar scroll  ⸻  🎬 CENA 1 — GANCHO  📸 Visual: Deitada na cama, luz baixa, celular iluminando o rosto  🎭 Ação: Olhar pro teto + expressão cansada  🗣 Fala: “Você também tá exausta… mas não consegue dormir?”  ⸻  🎬 CENA 2 — PROBLEMA  📸 Visual: Virando de um lado pro outro  🎭 Ação: Suspira, puxa coberta  🗣 Fala: “Seu corpo pede descanso… mas sua cabeça não para.”  ⸻  🎬 CENA 3 — IDENTIFICAÇÃO  📸 Visual: Close no rosto  🎭 Ação: Olhar v',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2117',title:'FLORABE - HARMONYA',tipo:'editar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# ROTEIRO NO ESTILO DO VÍDEO (ESTÉTICO + SUAVE)  ## 🎬 CENA 1 – GANCHO VISUAL (sem falar muito)  📸 Cena:  - Luz natural - Você sentada / cama / banheiro clean - Pegando calcinha ou se arrumando  📝 Texto na tela: “Todo mundo fala da flora intestinal…”  🎵 Música leve  ---  ## 🎬 CENA 2 – CONTINUAÇÃO (ainda soft)  📸 Cena:  - Close no rosto ou detalhe da rotina  📝 Texto: “mas quase ninguém fala da flora íntima”  ---  ## 🎬 CENA 3 – INTRO DO PRODUTO  📸 Cena:  - Você pegando o FloraBe na bolsa ou mesa  📝',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2118',title:'VIDEO DE APRESENTAÇÃO CRETIFY E INSTAGRAM',tipo:'editar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# 🎬 Roteiro UGC – Vídeo de Apresentação (com tela dividida)  ⏱ Duração ideal: **20–30 segundos**  ---  # 🎥 CENA 1 — GANCHO (0–3s)  **Imagem:** Tela dividida em 4 quadrantes.  Cada quadrante aparece rápido com texto e você fazendo micro expressões.  **Fala:**  > “Eu sou a Valéria.”  **Na tela aparece:**  Quadrante 1: 👶 **Mãe** Quadrante 2: 💍 **Casada** Quadrante 3: 🎂 **36 anos** Quadrante 4: 📍 **São Paulo**  💡 Visual:  - você segurando bebê - você sorrindo - você no celular gravando - você em cas',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2119',title:'PORTA BOLSAS',tipo:'editar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# 🎬 Roteiro 1 — “O caos das bolsas de bebê”  ### CENA 1 – GANCHO (3s)  📸 Você joga várias bolsas da bebê na cama.  🗣 Fala: \"Se você tem bebê… sabe o caos que é achar bolsa dentro do armário.\"  ---  ### CENA 2 – PROBLEMA  📸 Mostra bolsas misturadas.  🗣 \"Eu perdia MUITO tempo procurando a bolsa certa.\"  ---  ### CENA 3 – SOLUÇÃO  📸 Mostra o organizador pendurado.  🗣 \"Aí eu comprei esse organizador de bolsas.\"  ---  ### CENA 4 – RESULTADO  📸 Coloca cada bolsinha da bebê nos bolsos.  🗣 \"Agora fica t',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2120',title:'Organizador giratório',tipo:'editar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'# ROTEIRO 1 — “TIKTOK ME FEZ COMPRAR”  🎥 **CENA 1 — GANCHO** Mostra a penteadeira bagunçada.  🎙 Fala: “Eu juro que não ia comprar mais nada que o TikTok me mostrou…”  ---  🎥 **CENA 2 — PROBLEMA** Você procurando algo e derrubando produtos.  🎙 “Mas minha penteadeira tava impossível.”  ---  🎥 **CENA 3 — SOLUÇÃO** Mostra o organizador giratório.  🎙 “Até que eu testei esse organizador.”  ---  🎥 **CENA 4 — DEMONSTRAÇÃO** Coloca os produtos e gira.  🎙 “Ele gira 360° e cabe MUITO mais coisa.”  ---  🎥 *',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2121',title:'UNBOXING AVON',tipo:'editar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2122',title:'BOX SCARLET UNBOXING ANTIGO',tipo:'editar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2123',title:'SAINT GERMAN',tipo:'gravar',etiqueta:'afiliado',origem:'',due:'2026-05-23',payDate:'',valor:124.0,pago:false,col:'doing',drive:'',obs:'Como divulgar:  Feed: Você pode escolher o formato que preferir: Reels foto ou carrossel. O conteúdo precisa falar sobre a promoção:  ✨24 horas, 24 produtos a partir de R$124 cada✨  Stories:  - 1ª tela: unboxing do produto - 2ª tela: stories falando sobre a campanha “24 HORAS, 24 PRODUTOS\" (não é válido estático e sim falado, viu? 😉)  ⚠️ Importante:  - Assim que o post de feed estiver no ar, me envia o link para validarmos o cupom, combinado? - Todos os posts devem ser postados na data combinada',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2124',title:'BLUEFIT',tipo:'gravar',etiqueta:'',origem:'',due:'2026-05-25',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'A parceria é no formato de permuta com duração inicial de 6 meses, com possibilidade de renovação. A cada mês, você deverá produzir 1 Reels e 1 Stories divulgando a promoção mensal da Bluefit. Os conteúdos devem ser enviados para aprovação da marca antes da publicação. Todo mês, você receberá um briefing com o tema da campanha, que servirá de base para a criação dos seus conteúdos – sempre com sua linguagem e estilo. O Reels precisa ser gravado na unidade Blue Fit que fechou a parceria com você.',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2125',title:'APICE TODOS OS DIAS 1 VIDEO CAMPANHA - 400,00',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2126',title:'SACE LADY - DESAFIO',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2127',title:'FREECO',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2128',title:'AIRLEARN',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'also can you please create accounts name - learn.w.vale pass - Airlearn@123 bio: Thanks Airlearn for helping me with languages🫠 Practice now with Airlearn  Contas: [**learn.w.vale@gmail.com**](mailto:learn.w.vale@gmail.com \"‌\")   Texto do Snapchat: pq tf minha tutora de ia me humilha assim 😭🥀  AI: Como se diz \"estou com fome\" em inglês?  Criador: Estou com fome.  AI: Você tem fome? Onde? Na mochila? Tá carregando um pote tipo marmita emocional? Criador: o quê?!  AI: Se diz \"Estou com fome.\" Vai ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2129',title:'LEAVIN PANTENE',tipo:'revisao',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'ROTEIRO:  # ROTEIRO COM NARRAÇÃO (30s)  **Estilo:** clean, íntimo, desejável **Vibe:** “segredo de verão”  ### ⏱ 0–3s — Gancho  **Cena:** Close no cabelo molhado escorrendo água, sol batendo. **Narração:**  > “Seu cabelo não quebra por fora… ele quebra por dentro.”  ---  ### ⏱ 4–9s — Dor  **Cena:** Você torcendo levemente uma mecha, ela arma/frizza. **Narração:**  > “Piscina, sol, química e calor detonam as ligações internas do fio.”  ---  ### ⏱ 10–15s — Solução  **Cena:** Mostra o produto e apl',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2130',title:'Sace lady batom - tiktokshop',tipo:'revisao',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'ROTEIRO AJUSTADO – POV (gancho forte)  🎬 CENA 1 – GANCHO  🎥 Ação: você já mostrando a esponjinha bem de perto (movimento rápido)  🎙️ Narração: “POV: você acha que isso é um creme… mas na pele vira PÓ 😳”  📝 Texto na tela: “isso aqui me chocou”  ⸻  🎬 CENA 2 – QUEBRA DE CURIOSIDADE  🎥 Ação: aproxima mais ainda a textura  🎙️ Narração: “e não é qualquer pó… fica aveludado, leve e não marca nada”  ⸻  🎬 CENA 3 – PROBLEMA  🎥 Ação: você olhando pra câmera tipo “eu sofria com isso”  🎙️ Narração: “porque s',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2131',title:'WAP EXTRATORA',tipo:'aguard_aprov',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2132',title:'SERUM SAL CELI',tipo:'aguard_aprov',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'# 🎬 ROTEIRO — ASMR / SENSORIAL  ## Produto: **Sérum Sallve**  🎯 Objetivo: **Portfólio | Beleza | Estético / Sensorial** ⏱️ Duração final: **12–18 segundos**  ---  ## ⚠️ REGRAS ABSOLUTAS DO VÍDEO  - ❌ ZERO fala - ❌ ZERO música - ❌ ZERO texto explicativo - ✅ SOM REAL (conta-gotas / toque / pele) - ✅ Movimento lento  Esse vídeo precisa **funcionar mesmo sem legenda**.  ---  ## 🎥 TAKE 1 — ABERTURA (0–2s)  **IMAGEM**  - Produto parado em superfície limpa - Fundo claro - Luz lateral natural  **AÇÃO** ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2133',title:'CHEIRINHO DA CASA',tipo:'aguard_aprov',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'review',drive:'',obs:'# ROTEIRO UGC – Emev Home & Co  Produto: Kit Átomo (Difusor + Água Perfumada) Plataforma: Reels Estética: Elegante, minimalista, aconchegante Gravado no seu quarto  Estrutura GGPTSBPC aplicada 👇  ---  ## 🎥 CENA 1 – G (Gancho Visual forte)  **Imagem:** Você abrindo a janela do quarto com expressão leve de incômodo. Cortina mexendo. Luz natural entrando.  **Ação:** Você respira fundo e faz uma leve careta.  **Fala:** “Você já entrou no seu quarto… e sentiu que o ambiente tava… pesado?”  📌 Texto na',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2134',title:'MAIO',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2135',title:'ELSEVE COLLAGEN _ fase 2 - R$460,00',tipo:'gravar',etiqueta:'',origem:'Squid',due:'2026-05-30',payDate:'',valor:460.0,pago:false,col:'doing',drive:'',obs:'Briefing: [https://drive.google.com/file/d/10jt3MBzrW20uM61H2QtClYCfRpWa25bc/view](https://drive.google.com/file/d/10jt3MBzrW20uM61H2QtClYCfRpWa25bc/view \"smartCard-inline\")',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2136',title:'Elseve Colágeno Lifter - R$450,00',tipo:'gravar',etiqueta:'',origem:'Squid',due:'',payDate:'',valor:450.0,pago:false,col:'doing',drive:'',obs:'BRIEFING: REACT TESTE DO NÓ  Marcações obrigatórias: Tiktok: \\@lorealparis_brasil Instagram: \\@lorealparis Youtube: \\@lorealparisbrasil Hashtag: #ElseveColageno #CabeloElseve  - a palavra “CABELO” na legenda  Mostrar através de um REACT do teste do nó como Elseve Colágeno encorpa os fios. Finalize o vídeo revelando o resultado no seu cabelo com metade do cabelo usando a linha (cabelo mais encorpado), e a outra metade sem a linha (menos denso, menos preenchido).  GANCHO: \"Quer ver a diferença de ',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2137',title:'Domidona -  Dia das mães - R$100,00',tipo:'gravar',etiqueta:'',origem:'',due:'',payDate:'',valor:100.0,pago:false,col:'doing',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2138',title:'AVON - ID COLLECTION - R$340,00',tipo:'gravar',etiqueta:'',origem:'MIS',due:'2026-05-23',payDate:'',valor:340.0,pago:false,col:'doing',drive:'',obs:'Oii, tudo bem? 😊💜  Aqui é a Bia do time de Atendimento MIS e vou te acompanhar na campanha de Avon | Iconic Collection ✨  INFLU: val_barros  Seu kit deve ser enviado em breve, assim que ele chegar, peço por favor que me avise por aqui 🙏📦  RASTREIO: AD423774662BR IMPORTANTE ACOMPANHAR O RASTREIO  PRAZO DE POSTAGEM ATÉ O DIA 13/05/25  Assim que tivermos a confirmação do recebimento, vamos encaminhar os direcionais finais da campanha + o prazo oficial de postagem, combinado? 😊  Já adiantando alguns',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2139',title:'DOPAMINELAND',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2140',title:'PANTENE BIOTINAMIDA B3',tipo:'publicado',etiqueta:'ugc',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2141',title:'RECEITA BRIGADEIRO',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2142',title:'VLOG -  DIA TE TRABALHO NO TIKTOK',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2143',title:'LOREALISTA - SERUMNETE UNBOXING',tipo:'publicado',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'done',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2144',title:'SEGUNDA - ORGANIZAÇÃO',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2145',title:'TERÇA - MATERNIDADE',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2146',title:'QUARTA - CUIDADOS',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2147',title:'QUINTA - UGC',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2148',title:'SEXTA - RECEITAS',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2149',title:'SABADO - VIAGENS',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2150',title:'DOMINGO - PROJETOS',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2151',title:'EMAGRECIMENTO',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2152',title:'LOOKS',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2153',title:'Vídeo 1',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'Isso aqui mudou minha vida no banheiro 15s 🎤 Você fala (hook — câmera) Olha pra câmera: \'Isso aqui mudou minha vida no banheiro — e eu não tô exagerando.\' 📷 Cena do produto Mostra o pack com 4 unidades na bancada. Pega um pacote, abre, puxa o lenço devagar. Close na textura. 🛒 CTA Volta pra câmera ou texto na tela: \'Tá no link aqui em cima, aproveita.\'',roteiro:'',checklist:[],timeline:[]},
+    {id:'c2154',title:'2',tipo:'',etiqueta:'',origem:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',drive:'',obs:'',roteiro:'',checklist:[],timeline:[]},
+    {id:'ts3001',title:'UGC TikTok Shop — Lancheira Térmica Infantil Aço Inox Portátil',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:43.7,pago:false,col:'backlog',drive:'',obs:'R$43,70 | Comissão R$4,37/venda | Amostra grátis | 973 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3002',title:'UGC TikTok Shop — Marmita Infantil 4 Divisórias com Talher 1500ml',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:28.68,pago:false,col:'backlog',drive:'',obs:'R$28,68 | Comissão R$2,72/venda (9,5%) | Amostra reembolsável | 116 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3003',title:'UGC TikTok Shop — Fancy Luz de Selfie Magnética com Espelho MagSafe',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:94.9,pago:false,col:'backlog',drive:'',obs:'R$94,90 | Comissão R$9,99/venda | Amostra grátis | 396 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3004',title:'UGC TikTok Shop — Kit 50 Cabides Infantil Bebê Branco Azul e Rosa',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:26.0,pago:false,col:'backlog',drive:'',obs:'R$26,00 | Comissão R$3,90/venda (15%) | Amostra grátis | 5 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3005',title:'UGC TikTok Shop — Kit 30 Marmita Potes 900ml BPA Free Travas Laterais',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:26.0,pago:false,col:'backlog',drive:'',obs:'R$26,00 | Comissão R$3,90/venda (15%) | Amostra grátis | 100 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3006',title:'UGC TikTok Shop — Kit Hidratante Labial Beta Cacau Show + Minions FPS6',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:49.9,pago:false,col:'backlog',drive:'',obs:'R$49,90 | Comissão R$5,99/venda (12%) | Amostra reembolsável | 10 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3007',title:'UGC TikTok Shop — Kit 4 Hidratantes Labiais Beta Cacau Show + Next Gen FPS6',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:49.9,pago:false,col:'backlog',drive:'',obs:'R$49,90 | Comissão R$5,49/venda (11%) | Amostra reembolsável | 767 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3008',title:'UGC TikTok Shop — Kit Gel de Limpeza + Sérum PDRN Exossomos Simple Organic',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:164.2,pago:false,col:'backlog',drive:'',obs:'R$164,20 | Comissão R$16,92/venda (10%) | Amostra reembolsável | 32 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3009',title:'UGC TikTok Shop — Fone de Ouvido Sem Fio TWS Q71 Hi-Res Audio',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:48.8,pago:false,col:'backlog',drive:'',obs:'R$48,80 | Comissão R$5,48/venda (11%) | Oferta Relâmpago | 170 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3010',title:'UGC TikTok Shop — Corretivo Sace Lady Can\'t See Me Cobertura Total',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:59.99,pago:false,col:'backlog',drive:'',obs:'R$59,99 | Comissão R$7,00/venda (10%) | Amostra grátis | 433 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3011',title:'UGC TikTok Shop — Kit Lollipop Scents 3x10ml Aura Beauty',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:77.0,pago:false,col:'backlog',drive:'',obs:'R$77,00 | Comissão R$9,84/venda (12%) | Oferta Relâmpago | 1546 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3012',title:'UGC TikTok Shop — Protetor Solar Bastão com Cor Antimanchas FPS90 Sallve',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:79.9,pago:false,col:'backlog',drive:'',obs:'R$79,90 | Comissão R$9,59/venda (12%) | Amostra grátis | 24.4K vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]},
+    {id:'ts3013',title:'UGC TikTok Shop — Garfinho Palitos Animais para Lancheira Infantil',tipo:'ugc',etiqueta:'tiktokshop',origem:'',due:'',payDate:'',valor:8.99,pago:false,col:'backlog',drive:'',obs:'R$8,99 | Comissão R$0,72/venda (8%) | Amostra reembolsável | 587 vendidos',roteiro:'',checklist:[{'text':'Gravar',done:false},{'text':'Editar',done:false},{'text':'Publicar',done:false}],timeline:[]}];
+const cardsEng = [
+{id:'e4001',title:'PORTIFOLIO',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4002',title:'PLANO DE NEGOCIOS',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4003',title:'PORTIFOLIO - SKETCHUP',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4004',title:'ORÇAR TERCEIRIZAÇÃO DO 3D',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4005',title:'ORÇAR PLOTAGEM',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4006',title:'BRIEFING CLIENTE INICIAL',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4007',title:'FOLHA PADRÃO NO PPT PARA MOODBOARD',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4008',title:'PORTIFOLIO - PROMOB',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4009',title:'PLANTAS PADRÕES AUTOCAD',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4010',title:'PADRONIZAÇÃO PROMOB',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4011',title:'ASSOCIAÇÃO ABD?',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4012',title:'COWORKING - ESPAÇO PARA ATENDER CLIENTES',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'‌  Coworking gratuito no shopping tatuape',checklist:[],timeline:[]},
+    {id:'e4013',title:'PPT - APRESENTAÇÃO',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4014',title:'INSTAGRAM',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4015',title:'CONTRATO',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4016',title:'Propósito',tipo:'',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4017',title:'Higor - APTO TUCURUVI',tipo:'inicial',tel:'',email:'',end:'',due:'',payDate:'',valor:1600.0,pago:false,col:'backlog',prio:'medium',drive:'',obs:'Passamos orçamento valor R$1600,00 - á vista. Considerando projeto completo com escolha de materiais e levantamento de m2 para orçamento.  Vai retornar em dezembro',checklist:[],timeline:[]},
+    {id:'e4018',title:'LUCIANO E VANESSA AMARAL',tipo:'medicao',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'doing',prio:'medium',drive:'',obs:'Dormitorio João',checklist:[],timeline:[]},
+    {id:'e4019',title:'LAVVI - MEDIÇÃO PARTE 2',tipo:'executivo',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'doing',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4020',title:'PAULA E FABIO - THALES - EDIFICIO PRESTES MAIA',tipo:'executivo',tel:'',email:'',end:'',due:'',payDate:'',valor:400.0,pago:false,col:'doing',prio:'medium',drive:'https://drive.google.com/drive/folders/1ASvsfF8m6aNI_HnEed0_wIr1VzsW1Pwp?usp=sharing',obs:'‌  Valores cobrados:  Medição R$400,00  Projeto: R$800,00  ‌  ---  Recebido:  R$800,00',checklist:[],timeline:[]},
+    {id:'e4021',title:'LAVVI - LIBERAÇÃO - PARTE 1',tipo:'executivo',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:false,col:'doing',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4022',title:'O PARQUE - APTO 324',tipo:'medicao',tel:'',email:'',end:'',due:'2026-04-13',payDate:'',valor:0,pago:true,col:'done',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4023',title:'O PARQUE - APTO 354',tipo:'medicao',tel:'',email:'',end:'',due:'2026-04-13',payDate:'',valor:0,pago:true,col:'done',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4024',title:'O PARQUE - APTO 304',tipo:'executivo',tel:'',email:'',end:'',due:'2026-04-13',payDate:'',valor:0,pago:true,col:'done',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4025',title:'THE COLLETION - APTO 1201',tipo:'medicao',tel:'',email:'',end:'',due:'2026-04-13',payDate:'',valor:0,pago:true,col:'done',prio:'medium',drive:'',obs:'',checklist:[],timeline:[{"date": "2026-04-12", "text": "MEDIÇÃO REALIZADA DIA 10/04"}]},
+    {id:'e4026',title:'ROSANGELA - COBERTURA',tipo:'medicao',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:true,col:'done',prio:'medium',drive:'',obs:'',checklist:[],timeline:[]},
+    {id:'e4027',title:'LAVVI - MEDIÇÃO PARTE 1',tipo:'medicao',tel:'',email:'',end:'',due:'',payDate:'',valor:0,pago:true,col:'done',prio:'medium',drive:'',obs:'',checklist:[],timeline:[{"date": "2026-04-12", "text": "MEDIÇÃO REALIZADA DIA 10/04 -  FALTA GRANITO"}]}];
+const cardsPes = [
+{id:'p5001',title:'Tarefas urgentes do dia',col:'doing',prio:'high',due:'',hora:'',obs:'Pendências HOJE e URGENTE',checklist:[{"text": "Exames", "done": false}, {"text": "Lençol tiktokshop", "done": false}, {"text": "Trocar filtro", "done": false}, {"text": "Ganchos", "done": false}, {"text": "Capa e perfil SI", "done": false}, {"text": "Destaques Instagram", "done": false}, {"text": "conta tim reembolso", "done": false}, {"text": "planilha viagem", "done": false}, {"text": "planilha victor", "done": false}, {"text": "MUTUA", "done": false}, {"text": "carrefour reembolso", "done": false}, {"text": "Postagens Believe", "done": false}, {"text": "Organizar casa geral", "done": false}, {"text": "Workshop Rafaela Chagas", "done": false}, {"text": "Scarlet box", "done": false}, {"text": "Mellow body", "done": false}, {"text": "Aura beauty", "done": false}]},
+    {id:'p5002',title:'Trabalho e mini tarefas',col:'doing',prio:'medium',due:'',hora:'',obs:'Tarefas de trabalho e mini tarefas rápidas',checklist:[{"text": "Editar fotos da casa", "done": false}, {"text": "VIDEO", "done": false}, {"text": "Ideias de fantasia", "done": false}, {"text": "video wap", "done": false}, {"text": "Documentação Believ.be", "done": false}, {"text": "Album do bebe", "done": false}, {"text": "Lovart.ai", "done": false}, {"text": "Video Depoimento Anderson", "done": false}, {"text": "colocar oleo nas canetinhas", "done": false}, {"text": "Rodinha mãe", "done": false}, {"text": "Hoponopono/ Hipopressivo", "done": false}, {"text": "Cursos organizar", "done": false}, {"text": "Loja", "done": false}, {"text": "Leitura", "done": false}, {"text": "Ver imagem para composição de quadros da sala", "done": false}, {"text": "Fitdance/ atividade bebe", "done": false}, {"text": "Ingles", "done": false}, {"text": "nicephotos", "done": false}]},
+    {id:'p5003',title:'Foto e fita métrica',col:'backlog',prio:'medium',due:'2026-05-06',hora:'',obs:'',checklist:[]},
+    {id:'p5004',title:'curso de medium',col:'backlog',prio:'medium',due:'',hora:'19:15',obs:'Recorrente: toda segunda as 19:15',checklist:[]},
+    {id:'p5005',title:'Organizar as fotos do Google Drive',col:'backlog',prio:'medium',due:'',hora:'',obs:'',checklist:[]},
+    {id:'p5006',title:'Terapia',col:'backlog',prio:'medium',due:'',hora:'13:00',obs:'Recorrente: toda segunda as 13:00',checklist:[]},
+    {id:'p5007',title:'Evangelho do lar',col:'backlog',prio:'medium',due:'',hora:'18:00',obs:'Recorrente: toda SEGUNDA as 18',checklist:[]},
+    {id:'p5008',title:'exame de fezes',col:'backlog',prio:'medium',due:'2025-12-19',hora:'10:00',obs:'',checklist:[]},
+    {id:'p5009',title:'NOTA FISCAL SQUID',col:'backlog',prio:'medium',due:'2026-05-06',hora:'',obs:'',checklist:[]},
+    {id:'p5010',title:'Nutrólogo as',col:'backlog',prio:'medium',due:'2026-04-13',hora:'09:15',obs:'',checklist:[]},
+    {id:'p5011',title:'Casamento dia',col:'backlog',prio:'medium',due:'2026-06-06',hora:'16:30',obs:'',checklist:[]},
+    {id:'p5012',title:'Endoscopia Delboni ipiranga',col:'backlog',prio:'medium',due:'2026-03-30',hora:'08:00',obs:'',checklist:[]},
+    {id:'p5013',title:'PVA dia',col:'backlog',prio:'medium',due:'2026-04-23',hora:'19:00',obs:'',checklist:[]},
+    {id:'p5014',title:'Dermato',col:'backlog',prio:'medium',due:'2026-05-19',hora:'15:00',obs:'',checklist:[]},
+    {id:'p5015',title:'Aniversario Manu dia',col:'backlog',prio:'medium',due:'2026-06-07',hora:'18:30',obs:'',checklist:[]},
+    {id:'p5016',title:'jogo Vinicius',col:'backlog',prio:'medium',due:'2026-06-19',hora:'',obs:'',checklist:[]},
+    {id:'p5017',title:'festa junina Duda',col:'backlog',prio:'medium',due:'2026-06-27',hora:'',obs:'',checklist:[]},
+    {id:'p5018',title:'Dia aniversário José Max',col:'backlog',prio:'medium',due:'2026-05-30',hora:'',obs:'',checklist:[]},
+    {id:'p5019',title:'Rotina Diária',col:'review',prio:'medium',due:'',hora:'',obs:'Blocos da rotina diária',checklist:[{"text": "YOGA", "done": false}, {"text": "ROTINA MATINAL", "done": false}, {"text": "ROTINA FLYLADY - MANHA", "done": false}, {"text": "LEVAR A DUDA NA ESCOLA", "done": false}, {"text": "ACADEMIA", "done": false}, {"text": "TRABALHO PRINCIPAL", "done": false}, {"text": "ALMOÇO + PAUSA", "done": false}, {"text": "ESTUDOS", "done": false}, {"text": "TRABALHO 2", "done": false}, {"text": "ZONA DA SEMANA - FLYLADY", "done": false}, {"text": "BUSCAR DUDA", "done": false}, {"text": "TEMPO DE QUALIDADE COM A DUDA", "done": false}, {"text": "PREPARAR JANTAR", "done": false}, {"text": "ROTINA NOITE - FLYLADY", "done": false}, {"text": "JANTAR + BANHO", "done": false}, {"text": "DORMIR", "done": false}]},
+    {id:'p5020',title:'Limpeza e organização da casa',col:'review',prio:'medium',due:'',hora:'',obs:'Lista de tarefas da casa',checklist:[{"text": "Limpar espelhos", "done": false}, {"text": "Janela sala", "done": false}, {"text": "Cortinhas", "done": false}, {"text": "Janela quarto", "done": false}, {"text": "coberta sala", "done": false}, {"text": "armarios", "done": false}, {"text": "prateleiras", "done": false}, {"text": "sapatos", "done": false}, {"text": "Lavar banheiro", "done": false}, {"text": "Tirar lixos", "done": false}, {"text": "Desmontar berço", "done": false}, {"text": "Varrer", "done": false}, {"text": "Passar pano", "done": false}, {"text": "Como tirar bolor da parede", "done": false}, {"text": "Roupa de cama", "done": false}, {"text": "Toalha", "done": false}]},
+    {id:'p5021',title:'Lista do mercado',col:'mercado',prio:'medium',due:'',hora:'',obs:'',checklist:[{"text": "Frango", "done": false}, {"text": "Ovos", "done": false}, {"text": "Fraldas", "done": false}, {"text": "Iogurte", "done": false}, {"text": "Arroz", "done": false}, {"text": "Café", "done": false}, {"text": "Leite", "done": false}, {"text": "Manteiga", "done": false}, {"text": "Queijo", "done": false}, {"text": "Maçã", "done": false}, {"text": "Banana", "done": false}, {"text": "Tomate", "done": false}, {"text": "Alface", "done": false}, {"text": "Detergente", "done": false}, {"text": "Sabão em pó", "done": false}]},
+    {id:'p5022',title:'Armário de remédios',col:'review',prio:'low',due:'',hora:'',obs:'Verificar estoque dos remédios em casa',checklist:[{"text": "Vitamina C", "done": false}, {"text": "Descongex xarope", "done": false}, {"text": "Decadron xarope", "done": false}, {"text": "Gástrico liquido", "done": false}, {"text": "Neutrofer", "done": false}, {"text": "Ceclor xarope", "done": false}, {"text": "Clenil", "done": false}, {"text": "Provance", "done": false}, {"text": "Seiki", "done": false}, {"text": "Maleato de decclorfeniramina", "done": false}, {"text": "Antiséptico", "done": false}, {"text": "Bismut", "done": false}, {"text": "Sulfato ferroso", "done": false}, {"text": "Cólica aliv", "done": false}, {"text": "Cylocort", "done": false}, {"text": "Paracetamol baby gotas", "done": false}, {"text": "Dipirona gotas", "done": false}, {"text": "Ibuprofeno gotas", "done": false}, {"text": "Luftal infantil", "done": false}, {"text": "Dramin", "done": false}, {"text": "Pasta dagua", "done": false}, {"text": "Cloridrato de hidróxizina", "done": false}, {"text": "Nistatina xarope", "done": false}, {"text": "Biozinc", "done": false}, {"text": "Allegra", "done": false}, {"text": "Hyabak", "done": false}, {"text": "Xo febre", "done": false}, {"text": "Salompas", "done": false}, {"text": "Camomine", "done": false}, {"text": "Prednisolona", "done": false}, {"text": "Amoxicilina", "done": false}, {"text": "Pantoprazol", "done": false}, {"text": "Dipirona 1g", "done": false}, {"text": "Metronidasol", "done": false}, {"text": "Cloridrato de ciclobenzaprina", "done": false}, {"text": "Tylenol sinus", "done": false}, {"text": "Buscopan", "done": false}, {"text": "loratadina", "done": false}, {"text": "Tandrilax", "done": false}, {"text": "Cetoprofeno", "done": false}, {"text": "Diclofenaco de sódio", "done": false}, {"text": "Ibuprofeno comprimido", "done": false}, {"text": "Dulcolax", "done": false}, {"text": "Piroxican", "done": false}, {"text": "Ácido tranrxamico", "done": false}, {"text": "Toragesic", "done": false}, {"text": "Daivobet", "done": false}, {"text": "Dersani", "done": false}, {"text": "Kollagenase", "done": false}, {"text": "Acetato hidrocortisona", "done": false}, {"text": "Profergan", "done": false}]},
+    {id:'p5023',title:'12 Mini Hábitos diários',col:'review',prio:'medium',due:'',hora:'',obs:'',checklist:[{"text": "12 mini hábitos", "done": false}]},
+    {id:'p5024',title:'Lista de desejos — casa',col:'review',prio:'low',due:'',hora:'',obs:'Coisas que quero comprar para casa',checklist:[{"text": "Jogo de toalhas bordado", "done": false}, {"text": "Conjuto de cama completo - 2 Unidades", "done": false}, {"text": "Talheres com cabo de silicone", "done": false}, {"text": "Tapete para banheiro que absorve a água", "done": false}, {"text": "Jogo de pratos", "done": false}, {"text": "Organizador giratório", "done": false}, {"text": "Tapete de cozinha novo", "done": false}, {"text": "Seladora a vacuo", "done": false}]}];
+
+// ── ESTADO ───────────────────────────────────────────────────────────
+let currentPage = 'home';
+let dragId = null;
+let editId = null;
+let lancEditId = null;
+let lancTipoAtual = 'entrada';
+let lancFiltroAtual = 'todos';
+let modalChkItems = [];
+let pagoAtivo = false;
+
+// Lançamentos financeiros
+let lancamentos = (() => { try { return JSON.parse(localStorage.getItem('vb_lancs') || '[]'); } catch(e) { return []; } })();
+function saveLancs() { localStorage.setItem('vb_lancs', JSON.stringify(lancamentos)); }
+
+// ── UTILS ─────────────────────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmtDate(d) { if(!d) return ''; const [y,m,dy]=d.split('-'); return `${dy}/${m}/${y}`; }
+function fmtDateShort(d) { if(!d) return ''; const [y,m,dy]=d.split('-'); return `${dy}/${m}`; }
+function fmtMoney(v) { return 'R$ ' + parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
+function addDays(d,n) { const dt=new Date(d+'T12:00:00'); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0]; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function dueClass(due, col) {
+  if (!due || col === 'done' || col === 'fechado') return '';
+  const t = today();
+  if (due < t) return 'overdue';
+  if (due <= addDays(t,3)) return 'soon';
+  return '';
+}
+function dueIcon(due, col) {
+  const dc = dueClass(due, col);
+  return dc === 'overdue' ? '⚠️' : dc === 'soon' ? '🔔' : '📅';
+}
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────────────────
+function switchPage(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (btn) btn.classList.add('active');
+  currentPage = page;
+  const btnNew = document.getElementById('btnNew');
+  btnNew.style.display = ['prospeccao','conteudo','engenharia','pessoal'].includes(page) ? 'block' : 'none';
+  if (page === 'home') renderHome();
+  else if (page === 'prospeccao') renderBoard('prospeccao');
+  else if (page === 'conteudo') renderBoard('conteudo');
+  else if (page === 'engenharia') renderBoard('engenharia');
+  else if (page === 'pessoal') renderBoard('pessoal');
+  else if (page === 'financeiro') renderFinanceiro();
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────
+function onDragStart(e, id) { dragId = id; setTimeout(() => document.getElementById('card-'+id)?.classList.add('card-dragging'), 0); }
+function onDragEnd(e) { document.querySelectorAll('.card-dragging').forEach(el => el.classList.remove('card-dragging')); dragId = null; }
+function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onDrop(e, col, quadro) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  const cards = getCards(quadro);
+  const c = cards.find(x => x.id === dragId);
+  if (c) { c.col = col; saveCards(quadro); renderBoard(quadro); }
+}
+
+// ── DADOS POR QUADRO ─────────────────────────────────────────────────
+function getCards(quadro) {
+  const key = 'vb_cards_' + quadro;
+  const saved = localStorage.getItem(key);
+  if (saved) return JSON.parse(saved);
+  const defaults = { prospeccao: cardsProsp, conteudo: cardsCont, engenharia: cardsEng, pessoal: cardsPes };
+  return JSON.parse(JSON.stringify(defaults[quadro] || []));
+}
+function saveCards(quadro) {
+  localStorage.setItem('vb_cards_' + quadro, JSON.stringify(getCards(quadro)));
+}
+function updateCard(quadro, id, data) {
+  const cards = getCards(quadro);
+  const idx = cards.findIndex(c => c.id === id);
+  if (idx > -1) { Object.assign(cards[idx], data); localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards)); }
+}
+function deleteCard(quadro, id) {
+  const cards = getCards(quadro).filter(c => c.id !== id);
+  localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards));
+}
+function addCard(quadro, card) {
+  const cards = getCards(quadro);
+  cards.unshift(card);
+  localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards));
+}
+function toggleChk(quadro, cardId, idx) {
+  const cards = getCards(quadro);
+  const c = cards.find(x => x.id === cardId);
+  if (c && c.checklist) { c.checklist[idx].done = !c.checklist[idx].done; localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards)); renderBoard(quadro); }
+}
+function removeMkt(cardId, idx) {
+  const cards = getCards('pessoal');
+  const c = cards.find(x => x.id === cardId);
+  if (c && c.checklist) { c.checklist.splice(idx,1); localStorage.setItem('vb_cards_pessoal', JSON.stringify(cards)); renderBoard('pessoal'); }
+}
+function addMkt(cardId) {
+  const input = document.getElementById('mkt-'+cardId);
+  if (!input || !input.value.trim()) return;
+  const cards = getCards('pessoal');
+  const c = cards.find(x => x.id === cardId);
+  if (c) { if(!c.checklist)c.checklist=[]; c.checklist.push({text:input.value.trim(),done:false}); localStorage.setItem('vb_cards_pessoal', JSON.stringify(cards)); renderBoard('pessoal'); }
+}
+function addTlEntry(quadro, cardId) {
+  const input = document.getElementById('tl-'+cardId);
+  if (!input || !input.value.trim()) return;
+  const cards = getCards(quadro);
+  const c = cards.find(x => x.id === cardId);
+  if (c) {
+    if (!c.timeline) c.timeline = [];
+    c.timeline.push({ date: new Date().toLocaleDateString('pt-BR'), text: input.value.trim() });
+    localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards));
+    input.value = '';
+    renderBoard(quadro);
+  }
+}
+
+// ── BOARDS ────────────────────────────────────────────────────────────
+const COLS = {
+  prospeccao: [{id:'novo',label:'📥 Novo',color:'#9E9A92'},{id:'followup',label:'📞 Follow up',color:'#C9A84C'},{id:'negociacao',label:'🤝 Negociação',color:'#5B8FA8'},{id:'fechado',label:'✅ Fechado',color:'#6A9E78'}],
+  conteudo:   [{id:'backlog',label:'📋 Backlog',color:'#9E9A92'},{id:'doing',label:'⚡ Em andamento',color:'#C9A84C'},{id:'review',label:'⏳ Aguardando',color:'#5B8FA8'},{id:'done',label:'✅ Concluído',color:'#6A9E78'}],
+  engenharia: [{id:'backlog',label:'📋 Backlog',color:'#9E9A92'},{id:'doing',label:'⚡ Em andamento',color:'#C9A84C'},{id:'review',label:'⏳ Aguardando',color:'#5B8FA8'},{id:'done',label:'✅ Concluído',color:'#6A9E78'}],
+  pessoal:    [{id:'doing',label:'⭐ Hoje / Urgente',color:'#C8824A'},{id:'backlog',label:'📅 Compromissos',color:'#6B9EBF'},{id:'review',label:'🏠 Rotina / Casa',color:'#8B7BAD'},{id:'mercado',label:'🛒 Mercado',color:'#6A9E78'},{id:'done',label:'✅ Concluído',color:'#6A9E78'}],
+};
+
+const TIPO_LABELS = {roteiro:'📝 Roteiro',gravar:'🎬 Gravar',editar:'✂️ Editar',publicado:'✅ Publicado',urgente:'⚠️ Urgente',prospeccao:'📞 Prospecção',aguard_produto:'📦 Aguard. Produto',aguard_aprov:'⏳ Aguard. Aprovação',revisao:'🔍 Revisão',ideia:'💡 Ideia',inicial:'📋 Inicial',medicao:'📏 Medição',executivo:'📐 Executivo',art:'ART'};
+const ETQ_LABELS = {afiliado:'🔗 Afiliado',organico:'🌱 Orgânico',tiktokshop:'🛒 TikTok Shop',ugc:'🎬 UGC'};
+const ETQ_CLASS  = {afiliado:'b-afil',organico:'b-org',tiktokshop:'b-tiktok',ugc:'b-ugc'};
+const STATUS_LABELS = {em_negociacao:'🤝 Em negociação',proposta_enviada:'📄 Proposta enviada',visita_agendada:'📅 Visita agendada',fechado:'✅ Fechado',sem_interesse:'🚫 Sem interesse'};
+const STATUS_CLASS  = {em_negociacao:'b-status-neg',proposta_enviada:'b-status-prop',visita_agendada:'b-status-vis',fechado:'b-status-neg',sem_interesse:'b-status-sem'};
+
+function renderBoard(quadro) {
+  const board = document.getElementById('board-'+quadro);
+  if (!board) return;
+  const cards = getCards(quadro);
+  const cols = COLS[quadro];
+  board.innerHTML = cols.map(col => {
+    const colCards = cards.filter(c => c.col === col.id);
+    return `<div class="col">
+      <div class="col-bar" style="background:${col.color}"></div>
+      <div class="col-head">
+        <span class="col-title" style="color:${col.color}">${col.label}</span>
+        <span class="col-count">${colCards.length}</span>
+      </div>
+      <div class="col-body" id="col-${quadro}-${col.id}"
+        ondragover="onDragOver(event)" ondrop="onDrop(event,'${col.id}','${quadro}')" ondragleave="onDragLeave(event)">
+        ${colCards.map(c => cardHTML(c, quadro)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function cardHTML(c, q) {
+  if (q === 'prospeccao') return prospCardHTML(c, q);
+  if (q === 'pessoal') return pesCardHTML(c, q);
+  if (q === 'engenharia') return engCardHTML(c, q);
+  return contCardHTML(c, q);
+}
+
+// ── CARD CONTEÚDO ─────────────────────────────────────────────────────
+function contCardHTML(c, q) {
+  const dc = dueClass(c.due, c.col);
+  const di = dueIcon(c.due, c.col);
+  const chkDone = (c.checklist||[]).filter(i=>i.done).length;
+  const chkTotal = (c.checklist||[]).length;
+  const visChk = (c.checklist||[]).slice(0,4);
+  const chkHTML = visChk.length ? `<div style="margin:4px 0 5px;">${visChk.map((item,i)=>`
+    <div class="chk-item" onclick="toggleChk('${q}','${c.id}',${i})">
+      <div class="chk-box ${item.done?'done':''}">${item.done?'<span style="color:white;font-size:9px;font-weight:900;">✓</span>':''}</div>
+      <span class="chk-label ${item.done?'done':''}">${esc(item.text)}</span>
+    </div>`).join('')}
+    <div class="chk-count">${chkDone}/${chkTotal} feitos${chkTotal>4?` · +${chkTotal-4} itens`:''}</div></div>` : '';
+  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);border-left:3px solid var(--gold);">
+    <div class="card-head">
+      <div class="card-title">${esc(c.title)}</div>
+      <div class="card-actions">
+        <button class="card-btn" onclick="event.stopPropagation();openEdit('${q}','${c.id}')">✏️</button>
+        <button class="card-btn" onclick="event.stopPropagation();askDelete('${q}','${c.id}')">🗑️</button>
+      </div>
+    </div>
+    <div class="badges">
+      ${c.tipo&&TIPO_LABELS[c.tipo]?`<span class="badge b-tipo">${TIPO_LABELS[c.tipo]}</span>`:''}
+      ${c.etiqueta&&ETQ_LABELS[c.etiqueta]?`<span class="badge ${ETQ_CLASS[c.etiqueta]}">${ETQ_LABELS[c.etiqueta]}</span>`:''}
+      ${c.origem?`<span class="badge" style="background:var(--surface3);color:var(--text3);">📌 ${esc(c.origem)}</span>`:''}
+      ${c.pago?`<span class="badge b-pago">✅ Pago</span>`:''}
+      ${chkTotal>0?`<span class="badge b-check">☑️ ${chkDone}/${chkTotal}</span>`:''}
+    </div>
+    ${chkHTML}
+    ${c.drive?`<a class="drive-link" href="${esc(c.drive)}" target="_blank" onclick="event.stopPropagation()">📎 Briefing no Drive</a>`:''}
+    <div class="card-footer">
+      <span class="card-due ${dc}">${c.due?di+' '+fmtDateShort(c.due):''}</span>
+      ${c.valor>0?`<span class="card-value">R$ ${parseFloat(c.valor).toLocaleString('pt-BR')}</span>`:''}
+    </div>
+  </div>`;
+}
+
+// ── CARD ENGENHARIA ───────────────────────────────────────────────────
+function engCardHTML(c, q) {
+  const dc = dueClass(c.due, c.col);
+  const di = dueIcon(c.due, c.col);
+  const chkDone = (c.checklist||[]).filter(i=>i.done).length;
+  const chkTotal = (c.checklist||[]).length;
+  const visChk = (c.checklist||[]).slice(0,3);
+  const chkHTML = visChk.length ? `<div style="margin:4px 0 5px;">${visChk.map((item,i)=>`
+    <div class="chk-item" onclick="toggleChk('${q}','${c.id}',${i})">
+      <div class="chk-box ${item.done?'done':''}">${item.done?'<span style="color:white;font-size:9px;font-weight:900;">✓</span>':''}</div>
+      <span class="chk-label ${item.done?'done':''}">${esc(item.text)}</span>
+    </div>`).join('')}
+    <div class="chk-count">${chkDone}/${chkTotal} feitos${chkTotal>3?` · +${chkTotal-3} itens`:''}</div></div>` : '';
+  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);border-left:3px solid var(--eng);">
+    <div class="card-head">
+      <div class="card-title">${esc(c.title)}</div>
+      <div class="card-actions">
+        <button class="card-btn" onclick="event.stopPropagation();openEdit('${q}','${c.id}')">✏️</button>
+        <button class="card-btn" onclick="event.stopPropagation();askDelete('${q}','${c.id}')">🗑️</button>
+      </div>
+    </div>
+    <div class="badges">
+      ${c.tipo&&TIPO_LABELS[c.tipo]?`<span class="badge" style="background:rgba(107,158,191,0.2);color:var(--eng);">📐 ${TIPO_LABELS[c.tipo]}</span>`:''}
+      ${c.pago?`<span class="badge b-pago">✅ Pago</span>`:''}
+      ${chkTotal>0?`<span class="badge b-check">☑️ ${chkDone}/${chkTotal}</span>`:''}
+    </div>
+    ${(c.tel||c.email)?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;color:var(--text3);margin-bottom:6px;">
+      ${c.tel?`<span>📞 ${esc(c.tel)}</span>`:''}${c.email?`<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">✉️ ${esc(c.email)}</span>`:''}
+    </div>`:''}
+    ${chkHTML}
+    ${c.drive?`<a class="drive-link" href="${esc(c.drive)}" target="_blank" onclick="event.stopPropagation()">📎 Projeto no Drive</a>`:''}
+    <div class="card-footer">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        ${c.due?`<span class="card-due ${dc}">${di} Entrega: ${fmtDateShort(c.due)}</span>`:''}
+        ${c.payDate?`<span style="font-size:10px;color:var(--green);">💰 Pagto: ${fmtDateShort(c.payDate)}</span>`:''}
+      </div>
+      ${c.valor>0?`<span class="card-value">R$ ${parseFloat(c.valor).toLocaleString('pt-BR')}</span>`:''}
+    </div>
+  </div>`;
+}
+
+// ── CARD PROSPECÇÃO ───────────────────────────────────────────────────
+function prospCardHTML(c, q) {
+  const dc = dueClass(c.due, c.col);
+  const hasTel = c.tel && c.tel.trim();
+  const hasEmail = c.email && c.email.trim();
+  const falta = !hasTel && !hasEmail;
+  const tl = (c.timeline||[]).slice(-3).reverse();
+  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);">
+    <div class="card-head">
+      <div class="card-title">${esc(c.title)}</div>
+      <div class="card-actions">
+        <button class="card-btn" onclick="event.stopPropagation();openEdit('${q}','${c.id}')">✏️</button>
+        <button class="card-btn" onclick="event.stopPropagation();askDelete('${q}','${c.id}')">🗑️</button>
+      </div>
+    </div>
+    <div class="badges">
+      ${c.cidade?`<span class="badge" style="background:var(--surface3);color:var(--text2);">📍 ${esc(c.cidade)}</span>`:''}
+      ${c.segmento?`<span class="badge" style="background:var(--surface3);color:var(--text2);">🏭 ${esc(c.segmento)}</span>`:''}
+      ${c.status&&STATUS_LABELS[c.status]?`<span class="badge ${STATUS_CLASS[c.status]}">${STATUS_LABELS[c.status]}</span>`:''}
+      ${falta?`<span class="badge b-falta">⚠️ Falta info</span>`:''}
+    </div>
+    <div class="prosp-fields">
+      ${pField('✉️','Email',c.email)}
+      ${pField('👤','Contato',c.contato)}
+      ${pField('📞','Tel',c.tel)}
+      ${c.obs?pField('💬','Obs',c.obs):''}
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+      <span style="font-size:10px;color:var(--text3);">📅 Próx. contato</span>
+      <span style="font-size:11px;font-weight:700;color:${dc==='overdue'?'var(--red)':dc==='soon'?'var(--orange)':'var(--gold)'};">${c.due?fmtDate(c.due):'—'}</span>
+    </div>
+    <div class="timeline">
+      <div class="tl-hdr">Linha do tempo</div>
+      ${tl.length?tl.map((e,i)=>`<div class="tl-entry"><div class="tl-dot ${i>0?'old':''}"></div><span class="tl-date">${e.date}</span><span class="tl-text">${esc(e.text)}</span></div>`).join(''):`<div class="tl-empty">Nenhuma atividade</div>`}
+      <div class="tl-add">
+        <input class="tl-input" id="tl-${c.id}" type="text" placeholder="Registrar atividade..." onclick="event.stopPropagation()" />
+        <button class="tl-btn" onclick="event.stopPropagation();addTlEntry('${q}','${c.id}')">+ Add</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function pField(icon, label, val) {
+  const empty = !val || !val.trim();
+  return `<div class="pf"><span class="pf-lbl">${icon} ${label}</span><span class="pf-val ${empty?'empty':''}">${empty?'não informado':esc(val)}</span></div>`;
+}
+
+// ── CARD PESSOAL ─────────────────────────────────────────────────────
+function pesCardHTML(c, q) {
+  const dc = dueClass(c.due, c.col);
+  const isMercado = c.col === 'mercado';
+  const isComp = c.col === 'backlog';
+  const isList = c.col === 'doing' || c.col === 'review';
+  const chkTotal = (c.checklist||[]).length;
+  const chkDone = (c.checklist||[]).filter(i=>i.done).length;
+  const borderColors = {doing:'#C8824A',backlog:'#6B9EBF',review:'#8B7BAD',mercado:'#6A9E78',done:'#6A9E78'};
+
+  const chkHTML = isList && chkTotal > 0 ? `<div style="margin:4px 0 5px;">${(c.checklist||[]).map((item,i)=>`
+    <div class="chk-item" onclick="toggleChk('${q}','${c.id}',${i})">
+      <div class="chk-box ${item.done?'done':''}">${item.done?'<span style="color:white;font-size:9px;font-weight:900;">✓</span>':''}</div>
+      <span class="chk-label ${item.done?'done':''}">${esc(item.text)}</span>
+    </div>`).join('')}
+    <div class="chk-count">${chkDone}/${chkTotal} concluídos</div></div>` : '';
+
+  const mktHTML = isMercado ? `<div style="margin:4px 0 5px;">${(c.checklist||[]).map((item,i)=>`
+    <div class="mkt-item" onclick="removeMkt('${c.id}',${i})">
+      <div class="mkt-box"></div><span style="font-size:11px;color:var(--text2);">${esc(item.text)}</span>
+    </div>`).join('')}</div>
+    <div class="mkt-add"><input id="mkt-${c.id}" type="text" placeholder="Adicionar item..." onkeydown="if(event.key==='Enter')addMkt('${c.id}')" onclick="event.stopPropagation()" /><button onclick="event.stopPropagation();addMkt('${c.id}')">+ Add</button></div>` : '';
+
+  const gcalLink = isComp && c.due ? (() => {
+    const dt = c.due.replace(/-/g,'');
+    const h = c.hora ? c.hora.replace(':','') : '080000';
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(c.title)}&dates=${dt}T${h}00/${dt}T${h}00&details=${encodeURIComponent(c.obs||'')}`;
+  })() : '';
+
+  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);border-left:3px solid ${borderColors[c.col]||'#9E9A92'};">
+    <div class="card-head">
+      <div class="card-title">${esc(c.title)}</div>
+      <div class="card-actions">
+        <button class="card-btn" onclick="event.stopPropagation();openEdit('${q}','${c.id}')">✏️</button>
+        <button class="card-btn" onclick="event.stopPropagation();askDelete('${q}','${c.id}')">🗑️</button>
+      </div>
+    </div>
+    ${chkHTML}${mktHTML}
+    ${isComp ? `${c.obs?`<div style="font-size:11px;color:var(--text3);margin:3px 0 7px;line-height:1.4;">${esc(c.obs.slice(0,80))}${c.obs.length>80?'...':''}</div>`:''}
+    <div class="card-footer">
+      <span class="card-due ${dc}">📅 ${c.due?fmtDate(c.due):''} ${c.hora?'às '+c.hora:''}</span>
+      ${gcalLink?`<a class="gcal-btn" href="${gcalLink}" target="_blank" onclick="event.stopPropagation()">📅 Google Cal</a>`:''}
+    </div>` : ''}
+    ${!isComp && !chkHTML && !mktHTML && c.due ? `<div class="card-footer"><span class="card-due ${dc}">📅 ${fmtDate(c.due)}</span></div>` : ''}
+  </div>`;
+}
+
+// ── HOME ─────────────────────────────────────────────────────────────
+function renderHome() {
+  const t = today();
+  document.getElementById('todayLbl').textContent = fmtDate(t);
+
+  // Agenda: cards com prazo hoje ou atrasados de todos os quadros
+  const allCards = [
+    ...getCards('conteudo').map(c=>({...c,_q:'🎬'})),
+    ...getCards('engenharia').map(c=>({...c,_q:'📐'})),
+    ...getCards('prospeccao').map(c=>({...c,_q:'📞'})),
+    ...getCards('pessoal').map(c=>({...c,_q:'🏠'})),
+  ];
+  const agenda = allCards.filter(c => c.due && c.due <= addDays(t,3) && c.col !== 'done' && c.col !== 'fechado' && c.col !== 'done').sort((a,b)=>a.due.localeCompare(b.due));
+
+  const agendaHTML = agenda.length ? agenda.map(c => {
+    const dc = dueClass(c.due, c.col);
+    const color = dc==='overdue'?'var(--red)':dc==='soon'?'var(--orange)':'var(--blue)';
+    return `<div class="agenda-item">
+      <div class="agenda-dot" style="background:${color}"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="agenda-title">${esc(c.title)}</div>
+        <div class="agenda-sub">${c._q} ${c.cidade||c.tipo||''}</div>
+      </div>
+      <div class="agenda-date" style="color:${color};">${fmtDateShort(c.due)}</div>
+    </div>`;
+  }).join('') : '<div style="padding:16px;font-size:12px;color:var(--text3);text-align:center;">Nenhum prazo nos próximos 3 dias ✓</div>';
+
+  document.getElementById('agendaBody').innerHTML = agendaHTML;
+
+  // Resumo financeiro
+  const totalEntradas = lancamentos.filter(l=>l.tipo==='entrada').reduce((a,l)=>a+parseFloat(l.valor||0),0);
+  const totalSaidas   = lancamentos.filter(l=>l.tipo==='saida').reduce((a,l)=>a+parseFloat(l.valor||0),0);
+  const aReceber = [...getCards('conteudo'),...getCards('engenharia')].filter(c=>c.valor>0&&!c.pago&&c.col!=='done').reduce((a,c)=>a+parseFloat(c.valor||0),0);
+  const saldo = totalEntradas - totalSaidas;
+
+  document.getElementById('homeFinBody').innerHTML = `
+    <div class="fin-grid">
+      <div class="fin-item"><div class="fin-label">Entradas</div><div class="fin-value" style="color:var(--green)">${fmtMoney(totalEntradas)}</div></div>
+      <div class="fin-item"><div class="fin-label">Saídas</div><div class="fin-value" style="color:var(--red)">${fmtMoney(totalSaidas)}</div></div>
+      <div class="fin-item"><div class="fin-label">Saldo</div><div class="fin-value" style="color:${saldo>=0?'var(--green)':'var(--red)'}">${fmtMoney(saldo)}</div></div>
+      <div class="fin-item"><div class="fin-label">A Receber</div><div class="fin-value" style="color:var(--gold)">${fmtMoney(aReceber)}</div></div>
+    </div>`;
+
+  // Resumo geral
+  const totais = {
+    prosp: getCards('prospeccao').length,
+    cont: getCards('conteudo').filter(c=>c.col!=='done').length,
+    eng: getCards('engenharia').filter(c=>c.col!=='done').length,
+    pes: getCards('pessoal').filter(c=>c.col!=='done').length,
+  };
+  document.getElementById('homeResumoBody').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${[['📞','Clientes prospecção',totais.prosp,'var(--blue)'],['🎬','Conteúdo em aberto',totais.cont,'var(--gold)'],['📐','Projetos em andamento',totais.eng,'var(--eng)'],['🏠','Tarefas pessoais',totais.pes,'var(--violet)']].map(([icon,label,val,color])=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:12px;color:var(--text2);">${icon} ${label}</span>
+        <span style="font-size:16px;font-weight:700;color:${color};">${val}</span>
+      </div>`).join('')}
+    </div>`;
+}
+
+// ── FINANCEIRO ────────────────────────────────────────────────────────
+function renderFinanceiro() {
+  const totalE = lancamentos.filter(l=>l.tipo==='entrada').reduce((a,l)=>a+parseFloat(l.valor||0),0);
+  const totalS = lancamentos.filter(l=>l.tipo==='saida').reduce((a,l)=>a+parseFloat(l.valor||0),0);
+  const saldo = totalE - totalS;
+  const aRec = [...getCards('conteudo'),...getCards('engenharia')].filter(c=>c.valor>0&&!c.pago&&c.col!=='done').reduce((a,c)=>a+parseFloat(c.valor||0),0);
+
+  document.getElementById('finResumo').innerHTML = `
+    <div class="fin-box"><div class="fin-box-label">↑ Entradas</div><div class="fin-box-value" style="color:var(--green)">${fmtMoney(totalE)}</div></div>
+    <div class="fin-box"><div class="fin-box-label">↓ Saídas</div><div class="fin-box-value" style="color:var(--red)">${fmtMoney(totalS)}</div></div>
+    <div class="fin-box"><div class="fin-box-label">= Saldo</div><div class="fin-box-value" style="color:${saldo>=0?'var(--green)':'var(--red)'}">${fmtMoney(saldo)}</div></div>
+    <div class="fin-box"><div class="fin-box-label">📋 A Receber</div><div class="fin-box-value" style="color:var(--gold)">${fmtMoney(aRec)}</div></div>`;
+
+  renderLancs();
+  renderAReceber();
+}
+
+function renderLancs() {
+  const sel = document.getElementById('lancMesFiltro');
+  if (sel && sel.options.length <= 1) {
+    const meses = [...new Set(lancamentos.map(l=>l.data.slice(0,7)))].sort().reverse();
+    const hm = today().slice(0,7);
+    if (!meses.includes(hm)) meses.unshift(hm);
+    const nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    sel.innerHTML = `<option value="">Todos os meses</option>` + meses.map(m => {
+      const [y,mo] = m.split('-');
+      return `<option value="${m}">${nomes[parseInt(mo)-1]} ${y}</option>`;
+    }).join('');
+  }
+  const mesFiltro = sel ? sel.value : '';
+  let items = [...lancamentos];
+  if (lancFiltroAtual !== 'todos') items = items.filter(l=>l.tipo===lancFiltroAtual);
+  if (mesFiltro) items = items.filter(l=>l.data.startsWith(mesFiltro));
+  items.sort((a,b)=>b.data.localeCompare(a.data));
+
+  const el = document.getElementById('lancList');
+  if (!el) return;
+  if (!items.length) { el.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--text3);text-align:center;">Nenhum lançamento</div>'; return; }
+
+  const stColor = {pago:'var(--green)',pendente:'var(--gold)',atrasado:'var(--red)'};
+  el.innerHTML = items.map(l => `
+    <div class="fin-item-row">
+      <div class="fin-icon" style="background:${l.tipo==='entrada'?'rgba(106,158,120,0.15)':'rgba(192,80,80,0.15)'};">${l.tipo==='entrada'?'↑':'↓'}</div>
+      <div class="fin-item-info">
+        <div class="fin-item-title">${esc(l.desc)}</div>
+        <div class="fin-item-sub"><span>${l.cat}</span><span>${fmtDate(l.data)}</span>${l.obs?`<span>${esc(l.obs)}</span>`:''}</div>
+      </div>
+      <div class="fin-item-right">
+        <div class="fin-item-value" style="color:${l.tipo==='entrada'?'var(--green)':'var(--red)'};">${l.tipo==='entrada'?'+':'-'}${fmtMoney(l.valor)}</div>
+        <div class="fin-item-status" style="color:${stColor[l.status]||'var(--text3)'};">${l.status}</div>
+      </div>
+      <div style="display:flex;gap:3px;flex-shrink:0;">
+        <button class="card-btn" onclick="editLanc('${l.id}')">✏️</button>
+        <button class="card-btn" style="color:var(--red)" onclick="deleteLanc('${l.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderAReceber() {
+  const el = document.getElementById('aReceberList');
+  if (!el) return;
+  const items = [...getCards('conteudo'),...getCards('engenharia')].filter(c=>c.valor>0&&!c.pago&&c.col!=='done').sort((a,b)=>(a.payDate||'').localeCompare(b.payDate||''));
+  if (!items.length) { el.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--text3);text-align:center;">Nenhum valor a receber</div>'; return; }
+  el.innerHTML = items.map(c => `
+    <div class="fin-item-row">
+      <div class="fin-item-info">
+        <div class="fin-item-title">${esc(c.title)}</div>
+        <div class="fin-item-sub"><span>${c.tipo||''}</span>${c.payDate?`<span>💰 ${fmtDate(c.payDate)}</span>`:''}</div>
+      </div>
+      <span class="fin-item-value" style="color:var(--gold);">${fmtMoney(c.valor)}</span>
+    </div>`).join('');
+}
+
+function setLancFiltro(f, btn) {
+  lancFiltroAtual = f;
+  document.querySelectorAll('#page-financeiro .fchip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLancs();
+}
+
+// ── LANÇAMENTOS ───────────────────────────────────────────────────────
+function openLanc() {
+  lancEditId = null; lancTipoAtual = 'entrada';
+  document.getElementById('lancTitle').textContent = 'Novo Lançamento';
+  ['lDesc','lObs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('lValor').value='';
+  document.getElementById('lData').value=today();
+  document.getElementById('lCat').value='conteudo';
+  document.getElementById('lStatus').value='pago';
+  setLancTipo('entrada');
+  document.getElementById('modalLanc').classList.add('show');
+  setTimeout(()=>document.getElementById('lDesc').focus(),80);
+}
+function closeLanc() { document.getElementById('modalLanc').classList.remove('show'); lancEditId=null; }
+function setLancTipo(tipo) {
+  lancTipoAtual = tipo;
+  const be = document.getElementById('btnEnt');
+  const bs = document.getElementById('btnSai');
+  if (tipo==='entrada') {
+    be.style.borderColor='var(--green)'; be.style.background='rgba(106,158,120,0.15)'; be.style.color='var(--green)';
+    bs.style.borderColor='var(--border2)'; bs.style.background='none'; bs.style.color='var(--text3)';
+  } else {
+    bs.style.borderColor='var(--red)'; bs.style.background='rgba(192,80,80,0.15)'; bs.style.color='var(--red)';
+    be.style.borderColor='var(--border2)'; be.style.background='none'; be.style.color='var(--text3)';
+  }
+}
+function editLanc(id) {
+  const l = lancamentos.find(x=>x.id===id); if(!l) return;
+  lancEditId=id; lancTipoAtual=l.tipo;
+  document.getElementById('lancTitle').textContent='Editar Lançamento';
+  document.getElementById('lDesc').value=l.desc;
+  document.getElementById('lValor').value=l.valor;
+  document.getElementById('lData').value=l.data;
+  document.getElementById('lCat').value=l.cat;
+  document.getElementById('lStatus').value=l.status;
+  document.getElementById('lObs').value=l.obs||'';
+  setLancTipo(l.tipo);
+  document.getElementById('modalLanc').classList.add('show');
+}
+function deleteLanc(id) { lancamentos=lancamentos.filter(l=>l.id!==id); saveLancs(); renderFinanceiro(); }
+function saveLanc() {
+  const desc=document.getElementById('lDesc').value.trim();
+  const valor=parseFloat(document.getElementById('lValor').value);
+  if (!desc||!valor) return;
+  const data={desc,valor,tipo:lancTipoAtual,data:document.getElementById('lData').value||today(),cat:document.getElementById('lCat').value,status:document.getElementById('lStatus').value,obs:document.getElementById('lObs').value.trim()};
+  if (lancEditId) { const idx=lancamentos.findIndex(l=>l.id===lancEditId); if(idx>-1)lancamentos[idx]={...lancamentos[idx],...data}; }
+  else lancamentos.push({id:uid(),...data});
+  saveLancs(); closeLanc(); renderFinanceiro(); if(currentPage==='home')renderHome();
+}
+
+// ── MODAIS DE EDIÇÃO ──────────────────────────────────────────────────
+function openNew() { openEdit(currentPage, null); }
+
+function openEdit(quadro, id) {
+  const cards = getCards(quadro);
+  const c = id ? cards.find(x=>x.id===id) : null;
+  editId = id;
+  let html = '';
+
+  if (quadro === 'prospeccao') {
+    html = prospModalHTML(c);
+  } else if (quadro === 'conteudo') {
+    html = contModalHTML(c);
+  } else if (quadro === 'engenharia') {
+    html = engModalHTML(c);
+  } else if (quadro === 'pessoal') {
+    html = pesModalHTML(c);
+  }
+  document.getElementById('modalGeralContent').innerHTML = html;
+  document.getElementById('modalGeral').classList.add('show');
+  setTimeout(()=>document.querySelector('#modalGeralContent input')?.focus(),80);
+}
+
+function closeGeral() { document.getElementById('modalGeral').classList.remove('show'); editId=null; }
+
+function askDelete(quadro, id) {
+  if (!confirm('Excluir este card?')) return;
+  deleteCard(quadro, id);
+  renderBoard(quadro);
+}
+
+// Modal Prospecção
+function prospModalHTML(c) {
+  return `<div class="modal-title">${c?c.title:'Novo Cliente'}</div>
+  <div class="fg"><label class="fl">Empresa *</label><input class="fi" id="m_title" value="${esc(c?.title||'')}" placeholder="Nome da empresa" /></div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Cidade</label><input class="fi" id="m_cidade" value="${esc(c?.cidade||'')}" /></div>
+    <div class="fg"><label class="fl">Segmento</label><input class="fi" id="m_segmento" value="${esc(c?.segmento||'')}" /></div>
+  </div>
+  <div class="fg"><label class="fl">Endereço/CEP</label><input class="fi" id="m_end" value="${esc(c?.end||'')}" /></div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Contato</label><input class="fi" id="m_contato" value="${esc(c?.contato||'')}" /></div>
+    <div class="fg"><label class="fl">Telefone</label><input class="fi" id="m_tel" value="${esc(c?.tel||'')}" /></div>
+  </div>
+  <div class="fg"><label class="fl">Email</label><input class="fi" id="m_email" value="${esc(c?.email||'')}" /></div>
+  <div class="fg"><label class="fl">LinkedIn</label><input class="fi" id="m_linkedin" value="${esc(c?.linkedin||'')}" /></div>
+  <div class="fg"><label class="fl">Observação</label><textarea class="fta" id="m_obs">${esc(c?.obs||'')}</textarea></div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Status</label><select class="fs" id="m_status">
+      <option value="">— sem status —</option>
+      ${['em_negociacao','proposta_enviada','visita_agendada','fechado','sem_interesse'].map(s=>`<option value="${s}" ${c?.status===s?'selected':''}>${STATUS_LABELS[s]}</option>`).join('')}
+    </select></div>
+    <div class="fg"><label class="fl">Coluna</label><select class="fs" id="m_col">
+      ${COLS.prospeccao.map(col=>`<option value="${col.id}" ${(c?.col||'novo')===col.id?'selected':''}>${col.label}</option>`).join('')}
+    </select></div>
+  </div>
+  <div class="fg"><label class="fl">Próximo contato</label><input class="fi" id="m_due" type="date" value="${c?.due||''}" /></div>
+  <div class="fg"><label class="fl">Registrar atividade</label>
+    <div style="display:flex;gap:8px;"><input class="fi" id="m_tl_date" type="date" value="${today()}" style="max-width:150px;"/><input class="fi" id="m_tl_text" placeholder="Ex: Liguei, não atendeu..." /></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-cancel" onclick="closeGeral()">Cancelar</button>
+    <button class="btn-save" onclick="saveProsp()">Salvar</button>
+  </div>`;
+}
+
+function saveProsp() {
+  const title = document.getElementById('m_title').value.trim();
+  if (!title) return alert('Informe o nome da empresa');
+  const tlText = document.getElementById('m_tl_text').value.trim();
+  const tlDate = document.getElementById('m_tl_date').value;
+  const cards = getCards('prospeccao');
+  const existing = editId ? cards.find(c=>c.id===editId) : null;
+  const tl = existing?.timeline ? [...existing.timeline] : [];
+  if (tlText) tl.push({date: tlDate ? new Date(tlDate+'T12:00:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'), text: tlText});
+  const data = {title, cidade:document.getElementById('m_cidade').value.trim(), segmento:document.getElementById('m_segmento').value.trim(), end:document.getElementById('m_end').value.trim(), contato:document.getElementById('m_contato').value.trim(), tel:document.getElementById('m_tel').value.trim(), email:document.getElementById('m_email').value.trim(), linkedin:document.getElementById('m_linkedin').value.trim(), obs:document.getElementById('m_obs').value.trim(), status:document.getElementById('m_status').value, col:document.getElementById('m_col').value, due:document.getElementById('m_due').value, timeline:tl};
+  if (editId) { updateCard('prospeccao', editId, data); } else { addCard('prospeccao', {id:uid(),...data}); }
+  closeGeral(); renderBoard('prospeccao');
+}
+
+// Modal Conteúdo (simplificado mas funcional)
+function contModalHTML(c) {
+  const tipoOpts = Object.entries(TIPO_LABELS).map(([v,l])=>`<option value="${v}" ${c?.tipo===v?'selected':''}>${l}</option>`).join('');
+  const etqOpts = `<option value="">— nenhuma —</option>`+Object.entries(ETQ_LABELS).map(([v,l])=>`<option value="${v}" ${c?.etiqueta===v?'selected':''}>${l}</option>`).join('');
+  const origens = ['SI','Noovid','MIS','Brandlovers','Squid','Lorealistar','Destrava','Inbound','Outbound','Ella','Kynde','Space','Acess'];
+  const orOpts = `<option value="">— nenhuma —</option>`+origens.map(o=>`<option ${c?.origem===o?'selected':''}>${o}</option>`).join('');
+  const colOpts = COLS.conteudo.map(col=>`<option value="${col.id}" ${(c?.col||'backlog')===col.id?'selected':''}>${col.label}</option>`).join('');
+  return `<div class="modal-title">${c?'Editar Card':'Novo Card'}</div>
+  <div class="fg"><label class="fl">Título *</label><input class="fi" id="m_title" value="${esc(c?.title||'')}" /></div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Tipo</label><select class="fs" id="m_tipo"><option value="">—</option>${tipoOpts}</select></div>
+    <div class="fg"><label class="fl">Etiqueta</label><select class="fs" id="m_etiqueta">${etqOpts}</select></div>
+  </div>
+  <div class="fg"><label class="fl">Origem</label><select class="fs" id="m_origem">${orOpts}</select></div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Data entrega</label><input class="fi" id="m_due" type="date" value="${c?.due||''}" /></div>
+    <div class="fg"><label class="fl">Data pagamento</label><input class="fi" id="m_payDate" type="date" value="${c?.payDate||''}" /></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Valor (R$)</label><input class="fi" id="m_valor" type="number" value="${c?.valor||''}" /></div>
+    <div class="fg"><label class="fl">Coluna</label><select class="fs" id="m_col">${colOpts}</select></div>
+  </div>
+  <div class="fg"><label class="fl">Status pagamento</label>
+    <div class="pago-toggle ${c?.pago?'on':''}" id="m_pago_toggle" onclick="togglePagoModal()">
+      <div class="pago-check ${c?.pago?'on':''}" id="m_pago_check">${c?.pago?'<span style="color:white;font-size:11px;font-weight:900;">✓</span>':''}</div>
+      <span id="m_pago_label" style="font-size:13px;color:${c?.pago?'var(--green)':'var(--text2)'};">${c?.pago?'Pago ✅':'Marcar como pago'}</span>
+    </div>
+    <div class="pago-aviso" id="m_pago_aviso" style="display:${c?.pago?'block':'none'};">✅ Valor será lançado no Financeiro</div>
+  </div>
+  <div class="fg"><label class="fl">📎 Link do Drive</label><input class="fi" id="m_drive" type="url" value="${esc(c?.drive||'')}" placeholder="https://drive.google.com/..." /></div>
+  <div class="fg"><label class="fl">Observações</label><textarea class="fta" id="m_obs">${esc(c?.obs||'')}</textarea></div>
+  <div class="modal-actions">
+    <button class="btn-cancel" onclick="closeGeral()">Cancelar</button>
+    <button class="btn-save" onclick="saveCont()">Salvar</button>
+  </div>`;
+}
+
+function togglePagoModal() {
+  pagoAtivo = !pagoAtivo;
+  document.getElementById('m_pago_toggle').classList.toggle('on', pagoAtivo);
+  document.getElementById('m_pago_check').classList.toggle('on', pagoAtivo);
+  document.getElementById('m_pago_check').innerHTML = pagoAtivo ? '<span style="color:white;font-size:11px;font-weight:900;">✓</span>' : '';
+  document.getElementById('m_pago_label').textContent = pagoAtivo ? 'Pago ✅' : 'Marcar como pago';
+  document.getElementById('m_pago_label').style.color = pagoAtivo ? 'var(--green)' : 'var(--text2)';
+  document.getElementById('m_pago_aviso').style.display = pagoAtivo ? 'block' : 'none';
+}
+
+function saveCont() {
+  const title = document.getElementById('m_title').value.trim();
+  if (!title) return alert('Informe o título');
+  const valor = parseFloat(document.getElementById('m_valor').value)||0;
+  const data = {title, tipo:document.getElementById('m_tipo').value, etiqueta:document.getElementById('m_etiqueta').value, origem:document.getElementById('m_origem').value, due:document.getElementById('m_due').value, payDate:document.getElementById('m_payDate').value, valor, col:document.getElementById('m_col').value, drive:document.getElementById('m_drive').value.trim(), obs:document.getElementById('m_obs').value, pago:pagoAtivo};
+  if (pagoAtivo && valor > 0) {
+    const cards = getCards('conteudo');
+    const c = editId ? cards.find(x=>x.id===editId) : null;
+    if (!c?.pago) lancamentos.push({id:uid(), desc:title, valor, tipo:'entrada', data:data.payDate||today(), cat:'conteudo', status:'pago', obs:'card:'+title}); saveLancs();
+  }
+  if (editId) updateCard('conteudo', editId, data); else addCard('conteudo', {id:uid(),...data, checklist:[], timeline:[]});
+  closeGeral(); renderBoard('conteudo'); pagoAtivo=false;
+}
+
+// Modal Engenharia
+function engModalHTML(c) {
+  const tipoOpts = ['','art','medicao','inicial','executivo'].map(v=>`<option value="${v}" ${(c?.tipo||'')===v?'selected':''}>${v?TIPO_LABELS[v]:'— nenhum —'}</option>`).join('');
+  const colOpts = COLS.engenharia.map(col=>`<option value="${col.id}" ${(c?.col||'backlog')===col.id?'selected':''}>${col.label}</option>`).join('');
+  return `<div class="modal-title">${c?c.title:'Novo Projeto'}</div>
+  <div class="fg"><label class="fl">Nome do cliente *</label><input class="fi" id="m_title" value="${esc(c?.title||'')}" /></div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Tipo</label><select class="fs" id="m_tipo">${tipoOpts}</select></div>
+    <div class="fg"><label class="fl">Valor (R$)</label><input class="fi" id="m_valor" type="number" value="${c?.valor||''}" /></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Telefone</label><input class="fi" id="m_tel" value="${esc(c?.tel||'')}" /></div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="m_email" value="${esc(c?.email||'')}" /></div>
+  </div>
+  <div class="fg"><label class="fl">Endereço</label><input class="fi" id="m_end" value="${esc(c?.end||'')}" /></div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Data de entrega</label><input class="fi" id="m_due" type="date" value="${c?.due||''}" /></div>
+    <div class="fg"><label class="fl">Data de pagamento</label><input class="fi" id="m_payDate" type="date" value="${c?.payDate||''}" /></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Coluna</label><select class="fs" id="m_col">${colOpts}</select></div>
+    <div class="fg"><label class="fl">Status pagamento</label>
+      <div class="pago-toggle ${c?.pago?'on':''}" id="m_pago_toggle" onclick="togglePagoModal()">
+        <div class="pago-check ${c?.pago?'on':''}" id="m_pago_check">${c?.pago?'<span style="color:white;font-size:11px;font-weight:900;">✓</span>':''}</div>
+        <span id="m_pago_label" style="font-size:12px;color:${c?.pago?'var(--green)':'var(--text2)'};">${c?.pago?'Pago ✅':'Marcar pago'}</span>
+      </div>
+    </div>
+  </div>
+  <div class="pago-aviso" id="m_pago_aviso" style="display:${c?.pago?'block':'none'};">✅ Valor será lançado no Financeiro</div>
+  <div class="fg"><label class="fl">📎 Link do Drive</label><input class="fi" id="m_drive" type="url" value="${esc(c?.drive||'')}" /></div>
+  <div class="fg"><label class="fl">Observações</label><textarea class="fta" id="m_obs">${esc(c?.obs||'')}</textarea></div>
+  <div class="modal-actions">
+    <button class="btn-cancel" onclick="closeGeral()">Cancelar</button>
+    <button class="btn-save" onclick="saveEng()">Salvar</button>
+  </div>`;
+}
+
+function saveEng() {
+  const title = document.getElementById('m_title').value.trim();
+  if (!title) return alert('Informe o nome do cliente');
+  const valor = parseFloat(document.getElementById('m_valor').value)||0;
+  const data = {title, tipo:document.getElementById('m_tipo').value, tel:document.getElementById('m_tel').value.trim(), email:document.getElementById('m_email').value.trim(), end:document.getElementById('m_end').value.trim(), due:document.getElementById('m_due').value, payDate:document.getElementById('m_payDate').value, valor, col:document.getElementById('m_col').value, drive:document.getElementById('m_drive').value.trim(), obs:document.getElementById('m_obs').value, pago:pagoAtivo};
+  if (pagoAtivo && valor > 0) {
+    const cards = getCards('engenharia');
+    const c = editId ? cards.find(x=>x.id===editId) : null;
+    if (!c?.pago) lancamentos.push({id:uid(), desc:title, valor, tipo:'entrada', data:data.payDate||today(), cat:'engenharia', status:'pago', obs:'card:'+title}); saveLancs();
+  }
+  if (editId) updateCard('engenharia', editId, data); else addCard('engenharia', {id:uid(),...data, checklist:[], timeline:[]});
+  closeGeral(); renderBoard('engenharia'); pagoAtivo=false;
+}
+
+// Modal Pessoal
+function pesModalHTML(c) {
+  const colOpts = COLS.pessoal.map(col=>`<option value="${col.id}" ${(c?.col||'doing')===col.id?'selected':''}>${col.label}</option>`).join('');
+  return `<div class="modal-title">${c?c.title:'Nova Tarefa'}</div>
+  <div class="fg"><label class="fl">Título *</label><input class="fi" id="m_title" value="${esc(c?.title||'')}" /></div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Coluna</label><select class="fs" id="m_col">${colOpts}</select></div>
+    <div class="fg"><label class="fl">Prioridade</label><select class="fs" id="m_prio">
+      <option value="high" ${c?.prio==='high'?'selected':''}>🔴 Alta</option>
+      <option value="medium" ${(!c||c?.prio==='medium')?'selected':''}>🟡 Média</option>
+      <option value="low" ${c?.prio==='low'?'selected':''}>🟢 Baixa</option>
+    </select></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Data</label><input class="fi" id="m_due" type="date" value="${c?.due||''}" /></div>
+    <div class="fg"><label class="fl">Hora</label><input class="fi" id="m_hora" type="time" value="${c?.hora||''}" /></div>
+  </div>
+  <div class="fg"><label class="fl">Anotações</label><textarea class="fta" id="m_obs">${esc(c?.obs||'')}</textarea></div>
+  <div class="modal-actions">
+    <button class="btn-cancel" onclick="closeGeral()">Cancelar</button>
+    <button class="btn-save" onclick="savePes()">Salvar</button>
+  </div>`;
+}
+
+function savePes() {
+  const title = document.getElementById('m_title').value.trim();
+  if (!title) return alert('Informe o título');
+  const data = {title, col:document.getElementById('m_col').value, prio:document.getElementById('m_prio').value, due:document.getElementById('m_due').value, hora:document.getElementById('m_hora').value, obs:document.getElementById('m_obs').value};
+  if (editId) updateCard('pessoal', editId, data); else addCard('pessoal', {id:uid(),...data, checklist:[]});
+  closeGeral(); renderBoard('pessoal');
+}
+
+// ── BACKUP ────────────────────────────────────────────────────────────
+function exportBackup() {
+  const data = {
+    exportDate: new Date().toISOString(),
+    prospeccao: getCards('prospeccao'),
+    conteudo: getCards('conteudo'),
+    engenharia: getCards('engenharia'),
+    pessoal: getCards('pessoal'),
+    lancamentos,
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'valboard-backup-' + today() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+pagoAtivo = false;
+renderHome();
+</script>
+</body>
+</html>
