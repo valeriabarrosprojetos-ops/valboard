@@ -182,6 +182,14 @@ body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-seri
 .card-dragging { opacity:.4; }
 .drive-link { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:3px 8px; border-radius:5px; background:var(--surface3); color:var(--text2); text-decoration:none; border:1px solid var(--border2); margin-top:5px; }
 
+/* ── SEARCH BAR ── */
+.search-bar-wrap { padding:10px 14px 0; }
+.search-bar { display:flex; align-items:center; gap:8px; background:var(--surface2); border:1px solid var(--border2); border-radius:9px; padding:8px 12px; }
+.search-bar input { background:none; border:none; outline:none; color:var(--text); font-size:13px; flex:1; }
+.search-bar input::placeholder { color:var(--text3); }
+.search-bar-icon { color:var(--text3); font-size:14px; }
+.search-count { font-size:11px; color:var(--text3); flex-shrink:0; }
+
 /* Mobile */
 @media(max-width:767px) {
   .nav-tab { padding:10px 13px; font-size:12px; }
@@ -230,21 +238,53 @@ body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-seri
 
 <!-- PROSPECÇÃO -->
 <div class="page" id="page-prospeccao">
+  <div class="search-bar-wrap">
+    <div class="search-bar">
+      <span class="search-bar-icon">🔍</span>
+      <input type="text" id="search-prospeccao" placeholder="Pesquisar em prospeccao..." oninput="renderBoard('prospeccao')" />
+      <span class="search-count" id="search-count-prospeccao"></span>
+      <button onclick="document.getElementById('search-prospeccao').value='';renderBoard('prospeccao')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;display:none;" id="search-clear-prospeccao">✕</button>
+    </div>
+  </div>
   <div class="board-wrap"><div class="board" id="board-prospeccao"></div></div>
 </div>
 
 <!-- CONTEÚDO -->
 <div class="page" id="page-conteudo">
+  <div class="search-bar-wrap">
+    <div class="search-bar">
+      <span class="search-bar-icon">🔍</span>
+      <input type="text" id="search-conteudo" placeholder="Pesquisar em conteudo..." oninput="renderBoard('conteudo')" />
+      <span class="search-count" id="search-count-conteudo"></span>
+      <button onclick="document.getElementById('search-conteudo').value='';renderBoard('conteudo')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;display:none;" id="search-clear-conteudo">✕</button>
+    </div>
+  </div>
   <div class="board-wrap"><div class="board" id="board-conteudo"></div></div>
 </div>
 
 <!-- ENGENHARIA -->
 <div class="page" id="page-engenharia">
+  <div class="search-bar-wrap">
+    <div class="search-bar">
+      <span class="search-bar-icon">🔍</span>
+      <input type="text" id="search-engenharia" placeholder="Pesquisar em engenharia..." oninput="renderBoard('engenharia')" />
+      <span class="search-count" id="search-count-engenharia"></span>
+      <button onclick="document.getElementById('search-engenharia').value='';renderBoard('engenharia')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;display:none;" id="search-clear-engenharia">✕</button>
+    </div>
+  </div>
   <div class="board-wrap"><div class="board" id="board-engenharia"></div></div>
 </div>
 
 <!-- PESSOAL -->
 <div class="page" id="page-pessoal">
+  <div class="search-bar-wrap">
+    <div class="search-bar">
+      <span class="search-bar-icon">🔍</span>
+      <input type="text" id="search-pessoal" placeholder="Pesquisar em pessoal..." oninput="renderBoard('pessoal')" />
+      <span class="search-count" id="search-count-pessoal"></span>
+      <button onclick="document.getElementById('search-pessoal').value='';renderBoard('pessoal')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;display:none;" id="search-clear-pessoal">✕</button>
+    </div>
+  </div>
   <div class="board-wrap"><div class="board" id="board-pessoal"></div></div>
 </div>
 
@@ -883,8 +923,24 @@ const STATUS_CLASS  = {em_negociacao:'b-status-neg',proposta_enviada:'b-status-p
 function renderBoard(quadro) {
   const board = document.getElementById('board-'+quadro);
   if (!board) return;
-  const cards = getCards(quadro);
+  const allCards = getCards(quadro);
   const cols = COLS[quadro];
+
+  // Filtro de pesquisa
+  const searchInput = document.getElementById('search-'+quadro);
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const clearBtn = document.getElementById('search-clear-'+quadro);
+  if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+
+  const cards = query ? allCards.filter(c => {
+    const fields = [c.title, c.contato, c.email, c.tel, c.cidade, c.segmento, c.obs, c.tipo, c.etiqueta, c.origem, c.status].filter(Boolean).join(' ').toLowerCase();
+    return fields.includes(query);
+  }) : allCards;
+
+  // Contador
+  const countEl = document.getElementById('search-count-'+quadro);
+  if (countEl) countEl.textContent = query ? `${cards.length} resultado${cards.length!==1?'s':''}` : '';
+
   board.innerHTML = cols.map(col => {
     const colCards = cards.filter(c => c.col === col.id);
     return `<div class="col">
