@@ -1589,6 +1589,44 @@ function savePes() {
 }
 
 // ── BACKUP ────────────────────────────────────────────────────────────
+// ── PAGO TOGGLE MODAL ────────────────────────────────────────────────
+function togglePagoModal() {
+  pagoAtivo = !pagoAtivo;
+  const toggle = document.getElementById('m_pago_toggle');
+  const check  = document.getElementById('m_pago_check');
+  const label  = document.getElementById('m_pago_label');
+  const aviso  = document.getElementById('m_pago_aviso');
+  if (!toggle) return;
+  toggle.classList.toggle('on', pagoAtivo);
+  check.classList.toggle('on', pagoAtivo);
+  check.innerHTML = pagoAtivo ? '<span style="color:white;font-size:11px;font-weight:900;">✓</span>' : '';
+  if (label) { label.textContent = pagoAtivo ? 'Pago ✅' : 'Marcar como pago'; label.style.color = pagoAtivo ? 'var(--green)' : 'var(--text2)'; }
+  if (aviso) aviso.style.display = pagoAtivo ? 'block' : 'none';
+}
+
+// ── CHECKLIST MODAL ───────────────────────────────────────────────────
+function renderModalChk() {
+  const el = document.getElementById('m_chk_list');
+  if (!el) return;
+  el.innerHTML = modalChkItems.map((item, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;margin-bottom:4px;">
+      <div onclick="modalChkItems[${i}].done=!modalChkItems[${i}].done;renderModalChk()"
+        style="width:16px;height:16px;border-radius:3px;border:1.5px solid ${item.done?'var(--green)':'var(--border2)'};background:${item.done?'var(--green)':'none'};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+        ${item.done?'<span style="color:white;font-size:9px;font-weight:900;">✓</span>':''}
+      </div>
+      <span style="font-size:12px;color:${item.done?'var(--text3)':'var(--text2)'};text-decoration:${item.done?'line-through':'none'};flex:1;">${esc(item.text)}</span>
+      <button onclick="modalChkItems.splice(${i},1);renderModalChk()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;">×</button>
+    </div>`).join('') || '<div style="font-size:12px;color:var(--text3);padding:6px 0;">Nenhum item ainda</div>';
+}
+
+function addModalChkItem() {
+  const input = document.getElementById('m_chk_new');
+  if (!input || !input.value.trim()) return;
+  modalChkItems.push({ text: input.value.trim(), done: false });
+  input.value = '';
+  renderModalChk();
+}
+
 function exportBackup() {
   const data = {
     exportDate: new Date().toISOString(),
