@@ -3,6 +3,7 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 let supaClient = null;
 const syncAck = {};
+let syncPollTimer = null;
 
 function setSyncErrorStatus() {
   const syncStatus = document.getElementById('syncStatus');
@@ -17,6 +18,12 @@ function showSyncRefreshingStatus() {
       syncStatus.textContent = '';
     }, 2000);
   }
+}
+
+function renderCurrentView() {
+  if (currentPage === 'home') renderHome();
+  else if (currentPage === 'financeiro') renderFinanceiro();
+  else renderBoard(currentPage);
 }
 
 function initSupabase() {
@@ -142,6 +149,14 @@ async function syncAllFromSupa() {
   }
 }
 
+function startSyncPolling() {
+  if (syncPollTimer) clearInterval(syncPollTimer);
+  syncPollTimer = setInterval(async () => {
+    const updated = await syncAllFromSupa();
+    if (updated) renderCurrentView();
+  }, 5000);
+}
+
 function initRealtimeSync() {
   if (!supaClient) return;
   supaClient
@@ -181,11 +196,14 @@ function initRealtimeSync() {
     .subscribe((status) => {
       console.log('Realtime status:', status);
       const syncStatus = document.getElementById('syncStatus');
-      if (syncStatus && status === 'SUBSCRIBED') {
+      if (!syncStatus) return;
+      if (status === 'SUBSCRIBED') {
         syncStatus.textContent = '🟢 Tempo real';
-        setTimeout(() => {
-          syncStatus.textContent = '';
-        }, 3000);
+        setTimeout(() => { syncStatus.textContent = ''; }, 3000);
+        return;
+      }
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        syncStatus.textContent = '🟡 Sync por polling';
       }
     });
 }
