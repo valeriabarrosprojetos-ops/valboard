@@ -878,7 +878,7 @@ const cardsPes = [
 // ── SUPABASE SYNC ────────────────────────────────────────────────────
 const SUPA_URL = 'https://ygtjuywxdxfluqwhczxe.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlndGp1eXd4ZHhmbHVxd2hjenhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDA2MDcsImV4cCI6MjA5NDkxNjYwN30.Sm16ntSzA3KOzrSK5nkcXIO0NlhNTey0XFq58twMHGk';
-const DATA_VERSION = '2026-05-27-v4';
+const DATA_VERSION = '2026-05-27-v5';
 
 let supaClient = null;
 
@@ -913,13 +913,17 @@ async function syncAllFromSupa() {
 
     let updated = false;
     for (const row of data) {
+      if (!row.quadro || !row.dados) continue;
       const quadro = row.quadro;
       const key = 'vb_cards_' + quadro;
-      const localTime = localStorage.getItem('vb_sync_time_' + quadro) || '0';
-      const supaTime = row.updated_at || '0';
-      if (supaTime > localTime) {
+      const localRaw = localStorage.getItem('vb_sync_time_' + quadro) || '0';
+      const supaRaw = row.updated_at || '0';
+      // Comparar como timestamps numéricos
+      const localMs = localRaw === '0' ? 0 : new Date(localRaw).getTime();
+      const supaMs  = supaRaw  === '0' ? 0 : new Date(supaRaw).getTime();
+      if (supaMs > localMs) {
         localStorage.setItem(key, JSON.stringify(row.dados));
-        localStorage.setItem('vb_sync_time_' + quadro, supaTime);
+        localStorage.setItem('vb_sync_time_' + quadro, supaRaw);
         updated = true;
       }
     }
@@ -933,21 +937,22 @@ function initRealtimeSync() {
     .channel('vb_sync_changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'vb_sync' }, (payload) => {
       const row = payload.new;
-      if (!row) return;
+      if (!row || !row.quadro || !row.dados) return;
       const quadro = row.quadro;
-      const key = 'vb_cards_' + quadro;
-      const localTime = localStorage.getItem('vb_sync_time_' + quadro) || '0';
-      const supaTime = row.updated_at || '0';
-      if (supaTime > localTime) {
-        localStorage.setItem(key, JSON.stringify(row.dados));
-        localStorage.setItem('vb_sync_time_' + quadro, supaTime);
-        // Atualizar a view se o quadro estiver visível
-        const syncStatus = document.getElementById('syncStatus');
-        if (syncStatus) { syncStatus.textContent = '🔄 Atualizando...'; setTimeout(() => syncStatus.textContent = '', 2000); }
-        if (currentPage === quadro) renderBoard(quadro);
-        else if (currentPage === 'home') renderHome();
-        showToast('🔄 ' + quadro + ' atualizado!');
+
+      // Sempre atualizar com dados do Supabase (fonte de verdade)
+      localStorage.setItem('vb_cards_' + quadro, JSON.stringify(row.dados));
+      localStorage.setItem('vb_sync_time_' + quadro, row.updated_at || new Date().toISOString());
+
+      // Atualizar UI
+      const syncStatus = document.getElementById('syncStatus');
+      if (syncStatus) {
+        syncStatus.textContent = '🔄 Atualizando...';
+        setTimeout(() => { syncStatus.textContent = ''; }, 2000);
       }
+      if (currentPage === quadro) renderBoard(quadro);
+      else if (currentPage === 'home') renderHome();
+      showToast('✅ Atualizado em tempo real!');
     })
     .subscribe((status) => {
       console.log('Realtime status:', status);
