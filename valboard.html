@@ -89,6 +89,7 @@ body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-seri
 /* ── CARDS ── */
 .card { border:1px solid var(--border); border-radius:8px; padding:11px; font-size:12px; }
 .card:hover { border-color:var(--border2); }
+.card button, .card input, .card textarea, .card select, .card a { -webkit-user-drag: none; }
 .card-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:5px; line-height:1.3; }
 .card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:5px; margin-bottom:5px; }
 .card-actions { display:flex; gap:3px; flex-shrink:0; }
@@ -200,6 +201,9 @@ body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-seri
 .chk-add button { background:var(--surface3); border:1px solid var(--border2); color:var(--text2); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; }
 
 .drag-over { background:rgba(255,255,255,0.03) !important; }
+.card-dragging { opacity:.4; }
+.drag-handle { cursor:grab; color:var(--text3); font-size:12px; padding:0 4px; user-select:none; }
+.drag-handle:active { cursor:grabbing; }
 .card-dragging { opacity:.4; }
 .drive-link { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:3px 8px; border-radius:5px; background:var(--surface3); color:var(--text2); text-decoration:none; border:1px solid var(--border2); margin-top:5px; }
 
@@ -536,7 +540,7 @@ const cardsProsp = [
 {id:"npc71f7c6f7f",title:"Seb do Brasil",cidade:"São Paulo - SP",segmento:"Retail",end:"03108-900",contato:"",tel:"(11) 5186-4800",email:"",linkedin:"",obs:"",col:"novo",status:"em_negociacao",due:"2026-05-23",timeline:[]},
 {id:"npd8b958f596",title:"FBM Fundição",cidade:"São Paulo - SP",segmento:"Retail",end:"03107-001",contato:"Beatriz",tel:"(11) 2065-7899",email:"comex@fbm.ind.br",linkedin:"",obs:"",col:"novo",status:"em_negociacao",due:"2026-05-23",timeline:[]},
 {id:"np335497f1a3",title:"Rio Branco Papeis",cidade:"São Paulo - SP",segmento:"Industrial",end:"03109-001",contato:"",tel:"(11) 3738-5900",email:"",linkedin:"",obs:"",col:"novo",status:"em_negociacao",due:"2026-05-23",timeline:[]},
-{id:"npc73faa5917",title:"Autron Automação",cidade:"São Paulo - SP",segmento:"Industrial",end:"05016-081",contato:"Giulia",tel:"(11) 2168-6554 /  2168-6540",email:"",linkedin:"",obs:"",col:"followup",status:"em_negociacao",due:"2026-05-23",timeline:[{"date": "12/09/2025", "text": "Ramal não disponível"}, {"date": "12/10/2025", "text": "Ramal não disponível"}]},
+{id:"npc73faa5917",title:"Autron Automação",cidade:"São Paulo - SP",segmento:"Industrial",end:"05016-081",contato:"Giulia",tel:"(11) 2168-6554 /  2168-6540",email:"supplychain@autron.com.br",linkedin:"",obs:"",col:"charles",status:"",due:"2026-06-06",timeline:[{"date": "12/09/2025", "text": "Ramal não disponível"}, {"date": "12/10/2025", "text": "Ramal não disponível"}, {"date": "27/05/2026", "text": "Falei com a Giulia e eles estão mudando o sistema pediu para enviar email."}]},
 {id:"np38fd1d8079",title:"Aerosafety",cidade:"São Paulo - SP",segmento:"Industrial",end:"04376-004",contato:"",tel:"(11) 5034-7292",email:"",linkedin:"",obs:"",col:"novo",status:"em_negociacao",due:"2026-05-23",timeline:[]},
 {id:"np5080c58f68",title:"Flexaseal",cidade:"São Paulo - SP",segmento:"Industrial",end:"01130-010",contato:"Walter Meirelles",tel:"(11) 3736-7373",email:"walter.meirelles@flexaseal.com.br",linkedin:"",obs:"",col:"novo",status:"em_negociacao",due:"2026-05-23",timeline:[]},
 {id:"np40396df9cf",title:"De Rigo",cidade:"São Paulo - SP",segmento:"Industrial",end:"05307-000",contato:"Mayara Rossi",tel:"(11) 3839-1900",email:"mayara.rossi@derigo.com.br",linkedin:"",obs:"",col:"novo",status:"em_negociacao",due:"2026-05-23",timeline:[]},
@@ -864,14 +868,75 @@ const cardsPes = [
 {id:"p5018",title:"Dia aniversário José Max",col:"backlog",prio:"medium",due:"2026-05-30",hora:"",obs:"",checklist:[]},
 {id:"p5019",title:"Rotina Diária",col:"review",prio:"medium",due:"",hora:"",obs:"Blocos da rotina diária",checklist:[{"text": "YOGA", "done": false}, {"text": "ROTINA MATINAL", "done": false}, {"text": "ROTINA FLYLADY - MANHA", "done": false}, {"text": "LEVAR A DUDA NA ESCOLA", "done": false}, {"text": "ACADEMIA", "done": false}, {"text": "TRABALHO PRINCIPAL", "done": false}, {"text": "ALMOÇO + PAUSA", "done": false}, {"text": "ESTUDOS", "done": false}, {"text": "TRABALHO 2", "done": false}, {"text": "ZONA DA SEMANA - FLYLADY", "done": false}, {"text": "BUSCAR DUDA", "done": false}, {"text": "TEMPO DE QUALIDADE COM A DUDA", "done": false}, {"text": "PREPARAR JANTAR", "done": false}, {"text": "ROTINA NOITE - FLYLADY", "done": false}, {"text": "JANTAR + BANHO", "done": false}, {"text": "DORMIR", "done": false}]},
 {id:"p5020",title:"Limpeza e organização da casa",col:"review",prio:"medium",due:"",hora:"",obs:"Lista de tarefas da casa",checklist:[{"text": "Limpar espelhos", "done": false}, {"text": "Janela sala", "done": false}, {"text": "Cortinhas", "done": false}, {"text": "Janela quarto", "done": false}, {"text": "coberta sala", "done": false}, {"text": "armarios", "done": false}, {"text": "prateleiras", "done": false}, {"text": "sapatos", "done": false}, {"text": "Lavar banheiro", "done": false}, {"text": "Tirar lixos", "done": false}, {"text": "Desmontar berço", "done": false}, {"text": "Varrer", "done": false}, {"text": "Passar pano", "done": false}, {"text": "Como tirar bolor da parede", "done": false}, {"text": "Roupa de cama", "done": false}, {"text": "Toalha", "done": false}]},
-{id:"p5021",title:"Lista do mercado",col:"mercado",prio:"medium",due:"",hora:"",obs:"",checklist:[{"text": "Frango", "done": false}, {"text": "Ovos", "done": false}, {"text": "Fraldas", "done": false}, {"text": "Iogurte", "done": false}, {"text": "Arroz", "done": false}, {"text": "Café", "done": false}, {"text": "Leite", "done": false}, {"text": "Manteiga", "done": false}, {"text": "Queijo", "done": false}, {"text": "Maçã", "done": false}, {"text": "Banana", "done": false}]},
+{id:"p5021",title:"Lista do mercado",col:"mercado",prio:"medium",due:"",hora:"",obs:"",checklist:[{"text": "papel higienico", "done": false}]},
 {id:"p5022",title:"Armário de remédios",col:"review",prio:"low",due:"",hora:"",obs:"Verificar estoque dos remédios em casa",checklist:[{"text": "Vitamina C", "done": false}, {"text": "Descongex xarope", "done": false}, {"text": "Decadron xarope", "done": false}, {"text": "Gástrico liquido", "done": false}, {"text": "Neutrofer", "done": false}, {"text": "Ceclor xarope", "done": false}, {"text": "Clenil", "done": false}, {"text": "Provance", "done": false}, {"text": "Seiki", "done": false}, {"text": "Maleato de decclorfeniramina", "done": false}, {"text": "Antiséptico", "done": false}, {"text": "Bismut", "done": false}, {"text": "Sulfato ferroso", "done": false}, {"text": "Cólica aliv", "done": false}, {"text": "Cylocort", "done": false}, {"text": "Paracetamol baby gotas", "done": false}, {"text": "Dipirona gotas", "done": false}, {"text": "Ibuprofeno gotas", "done": false}, {"text": "Luftal infantil", "done": false}, {"text": "Dramin", "done": false}, {"text": "Pasta dagua", "done": false}, {"text": "Cloridrato de hidróxizina", "done": false}, {"text": "Nistatina xarope", "done": false}, {"text": "Biozinc", "done": false}, {"text": "Allegra", "done": false}, {"text": "Hyabak", "done": false}, {"text": "Xo febre", "done": false}, {"text": "Salompas", "done": false}, {"text": "Camomine", "done": false}, {"text": "Prednisolona", "done": false}, {"text": "Amoxicilina", "done": false}, {"text": "Pantoprazol", "done": false}, {"text": "Dipirona 1g", "done": false}, {"text": "Metronidasol", "done": false}, {"text": "Cloridrato de ciclobenzaprina", "done": false}, {"text": "Tylenol sinus", "done": false}, {"text": "Buscopan", "done": false}, {"text": "loratadina", "done": false}, {"text": "Tandrilax", "done": false}, {"text": "Cetoprofeno", "done": false}, {"text": "Diclofenaco de sódio", "done": false}, {"text": "Ibuprofeno comprimido", "done": false}, {"text": "Dulcolax", "done": false}, {"text": "Piroxican", "done": false}, {"text": "Ácido tranrxamico", "done": false}, {"text": "Toragesic", "done": false}, {"text": "Daivobet", "done": false}, {"text": "Dersani", "done": false}, {"text": "Kollagenase", "done": false}, {"text": "Acetato hidrocortisona", "done": false}, {"text": "Profergan", "done": false}]},
 {id:"p5023",title:"12 Mini Hábitos diários",col:"review",prio:"medium",due:"",hora:"",obs:"",checklist:[{"text": "12 mini hábitos", "done": false}]},
 {id:"p5024",title:"Lista de desejos — casa",col:"review",prio:"low",due:"",hora:"",obs:"Coisas que quero comprar para casa",checklist:[{"text": "Jogo de toalhas bordado", "done": false}, {"text": "Conjuto de cama completo - 2 Unidades", "done": false}, {"text": "Talheres com cabo de silicone", "done": false}, {"text": "Tapete para banheiro que absorve a água", "done": false}, {"text": "Jogo de pratos", "done": false}, {"text": "Organizador giratório", "done": false}, {"text": "Tapete de cozinha novo", "done": false}, {"text": "Seladora a vacuo", "done": false}]}
 ];
 
-// ── VERSÃO DOS DADOS ─────────────────────────────────────────────────
-const DATA_VERSION = '2026-05-27-v1'; // Atualizar ao importar novo backup
+// ── SUPABASE SYNC ────────────────────────────────────────────────────
+const SUPA_URL = 'https://ygtjuywxdxfluqwhczxe.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlndGp1eXd4ZHhmbHVxd2hjenhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDA2MDcsImV4cCI6MjA5NDkxNjYwN30.Sm16ntSzA3KOzrSK5nkcXIO0NlhNTey0XFq58twMHGk';
+const DATA_VERSION = '2026-05-27-v3';
+
+async function supaFetch(path, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'resolution=merge-duplicates' : ''
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const r = await fetch(SUPA_URL + path, opts);
+    if (!r.ok) { console.warn('Supa error:', r.status, await r.text()); return null; }
+    const txt = await r.text();
+    return txt ? JSON.parse(txt) : null;
+  } catch(e) {
+    console.warn('Supa fetch error:', e);
+    return null;
+  }
+}
+
+async function syncToSupa(quadro) {
+  const cards = getCards(quadro);
+  await supaFetch('/rest/v1/vb_sync', 'POST', {
+    id: quadro,
+    quadro,
+    dados: cards,
+    updated_at: new Date().toISOString()
+  });
+}
+
+async function syncFromSupa(quadro) {
+  const result = await supaFetch(`/rest/v1/vb_sync?id=eq.${quadro}&select=dados,updated_at`);
+  if (!result || !result.length) return null;
+  return result[0];
+}
+
+async function syncAllFromSupa() {
+  const result = await supaFetch('/rest/v1/vb_sync?select=*');
+  if (!result || !result.length) return false;
+
+  let updated = false;
+  for (const row of result) {
+    const quadro = row.quadro;
+    const key = 'vb_cards_' + quadro;
+    const localTime = localStorage.getItem('vb_sync_time_' + quadro) || '0';
+    const supaTime = row.updated_at || '0';
+
+    // Se Supabase tem versão mais recente, usar ela
+    if (supaTime > localTime) {
+      localStorage.setItem(key, JSON.stringify(row.dados));
+      localStorage.setItem('vb_sync_time_' + quadro, supaTime);
+      updated = true;
+    }
+  }
+  return updated;
+}
 
 // ── ESTADO ───────────────────────────────────────────────────────────
 let currentPage = 'home';
@@ -923,15 +988,43 @@ function switchPage(page, btn) {
 }
 
 // ── DRAG & DROP ───────────────────────────────────────────────────────
-function onDragStart(e, id) { dragId = id; setTimeout(() => document.getElementById('card-'+id)?.classList.add('card-dragging'), 0); }
-function onDragEnd(e) { document.querySelectorAll('.card-dragging').forEach(el => el.classList.remove('card-dragging')); dragId = null; }
-function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onDragStart(e, id) {
+  dragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+  setTimeout(() => document.getElementById('card-'+id)?.classList.add('card-dragging'), 0);
+}
+function onDragEnd(e) {
+  document.querySelectorAll('.card-dragging').forEach(el => el.classList.remove('card-dragging'));
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  dragId = null;
+}
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function onDragLeave(e) {
+  // Só remover se saiu de verdade (não para filho)
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+}
 function onDrop(e, col, quadro) {
-  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  const id = dragId || e.dataTransfer.getData('text/plain');
+  if (!id) return;
   const cards = getCards(quadro);
-  const c = cards.find(x => x.id === dragId);
-  if (c) { c.col = col; saveCards(quadro); renderBoard(quadro); }
+  const c = cards.find(x => x.id === id);
+  if (c && c.col !== col) {
+    c.col = col;
+    saveCards(quadro);
+    renderBoard(quadro);
+    showToast('✅ Card movido!');
+  }
+  dragId = null;
 }
 
 // ── DADOS POR QUADRO ─────────────────────────────────────────────────
@@ -954,21 +1047,38 @@ function getCards(quadro) {
   return JSON.parse(JSON.stringify(defaults[quadro] || []));
 }
 function saveCards(quadro) {
-  localStorage.setItem('vb_cards_' + quadro, JSON.stringify(getCards(quadro)));
+  const cards = getCards(quadro);
+  const now = new Date().toISOString();
+  localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards));
+  localStorage.setItem('vb_sync_time_' + quadro, now);
+  // Sync para Supabase em background
+  syncToSupa(quadro).catch(e => console.warn('sync error:', e));
 }
 function updateCard(quadro, id, data) {
   const cards = getCards(quadro);
   const idx = cards.findIndex(c => c.id === id);
-  if (idx > -1) { Object.assign(cards[idx], data); localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards)); }
+  if (idx > -1) {
+    Object.assign(cards[idx], data);
+    const now = new Date().toISOString();
+    localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards));
+    localStorage.setItem('vb_sync_time_' + quadro, now);
+    syncToSupa(quadro).catch(e => console.warn('sync error:', e));
+  }
 }
 function deleteCard(quadro, id) {
   const cards = getCards(quadro).filter(c => c.id !== id);
+  const now = new Date().toISOString();
   localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards));
+  localStorage.setItem('vb_sync_time_' + quadro, now);
+  syncToSupa(quadro).catch(e => console.warn('sync error:', e));
 }
 function addCard(quadro, card) {
   const cards = getCards(quadro);
   cards.unshift(card);
+  const now = new Date().toISOString();
   localStorage.setItem('vb_cards_' + quadro, JSON.stringify(cards));
+  localStorage.setItem('vb_sync_time_' + quadro, now);
+  syncToSupa(quadro).catch(e => console.warn('sync error:', e));
 }
 function toggleChk(quadro, cardId, idx) {
   const cards = getCards(quadro);
@@ -1110,6 +1220,7 @@ function contCardHTML(c, q) {
     <div class="chk-count">${chkDone}/${chkTotal} feitos${chkTotal>4?` · +${chkTotal-4} itens`:''}</div></div>` : '';
   return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);border-left:3px solid var(--gold);">
     <div class="card-head">
+      <span class="drag-handle" title="Arrastar">⠿</span>
       <div class="card-title">${esc(c.title)}</div>
       <div class="card-actions">
         <button class="card-btn" onclick="event.stopPropagation();openEdit('${q}','${c.id}')">✏️</button>
@@ -1148,6 +1259,7 @@ function engCardHTML(c, q) {
     <div class="chk-count">${chkDone}/${chkTotal} feitos${chkTotal>3?` · +${chkTotal-3} itens`:''}</div></div>` : '';
   return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);border-left:3px solid var(--eng);">
     <div class="card-head">
+      <span class="drag-handle" title="Arrastar">⠿</span>
       <div class="card-title">${esc(c.title)}</div>
       <div class="card-actions">
         <button class="card-btn" onclick="event.stopPropagation();openEdit('${q}','${c.id}')">✏️</button>
@@ -1183,6 +1295,7 @@ function prospCardHTML(c, q) {
   const tl = (c.timeline||[]).slice(-3).reverse();
   return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);">
     <div class="card-head">
+      <span class="drag-handle" title="Arrastar">⠿</span>
       <div class="card-title">${esc(c.title)}</div>
       <div class="card-actions">
         <button class="card-btn" onclick="event.stopPropagation();openEdit('${q}','${c.id}')">✏️</button>
@@ -2187,7 +2300,11 @@ function resetQuadro(quadro) {
   showToast && showToast('✅ ' + quadro + ' recarregado!');
 }
 
-function exportBackup() {
+async function exportBackup() {
+  // Forçar sync completo antes de exportar
+  for (const q of ['prospeccao','conteudo','engenharia','pessoal']) {
+    await syncToSupa(q);
+  }
   const data = {
     exportDate: new Date().toISOString(),
     prospeccao: getCards('prospeccao'),
@@ -2219,7 +2336,26 @@ function setChip(quadro, value, btn) {
 
 // ── INIT ──────────────────────────────────────────────────────────────
 pagoAtivo = false;
-renderHome();
+
+// Sincronizar com Supabase ao iniciar
+(async () => {
+  const syncStatus = document.getElementById('syncStatus');
+  if (syncStatus) syncStatus.textContent = '🔄 Sincronizando...';
+  try {
+    const updated = await syncAllFromSupa();
+    if (syncStatus) syncStatus.textContent = updated ? '✅ Sincronizado' : '✅ Online';
+    setTimeout(() => { if(syncStatus) syncStatus.textContent = ''; }, 3000);
+  } catch(e) {
+    if (syncStatus) syncStatus.textContent = '⚠️ Offline';
+  }
+  renderHome();
+  // Sincronizar a cada 30 segundos
+  setInterval(async () => {
+    const updated = await syncAllFromSupa();
+    if (updated && currentPage !== 'home') renderBoard(currentPage);
+    if (updated && currentPage === 'home') renderHome();
+  }, 30000);
+})();
 
 // Search listeners — adicionados após o DOM estar pronto
 ['prospeccao','conteudo','engenharia','pessoal'].forEach(quadro => {
