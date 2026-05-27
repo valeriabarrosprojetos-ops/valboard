@@ -226,6 +226,7 @@ body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-seri
   .col { width:265px; }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -877,65 +878,87 @@ const cardsPes = [
 // ── SUPABASE SYNC ────────────────────────────────────────────────────
 const SUPA_URL = 'https://ygtjuywxdxfluqwhczxe.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlndGp1eXd4ZHhmbHVxd2hjenhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDA2MDcsImV4cCI6MjA5NDkxNjYwN30.Sm16ntSzA3KOzrSK5nkcXIO0NlhNTey0XFq58twMHGk';
-const DATA_VERSION = '2026-05-27-v3';
+const DATA_VERSION = '2026-05-27-v4';
 
-async function supaFetch(path, method='GET', body=null) {
-  const opts = {
-    method,
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + SUPA_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'resolution=merge-duplicates' : ''
-    }
-  };
-  if (body) opts.body = JSON.stringify(body);
+let supaClient = null;
+
+function initSupabase() {
   try {
-    const r = await fetch(SUPA_URL + path, opts);
-    if (!r.ok) { console.warn('Supa error:', r.status, await r.text()); return null; }
-    const txt = await r.text();
-    return txt ? JSON.parse(txt) : null;
+    supaClient = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    return true;
   } catch(e) {
-    console.warn('Supa fetch error:', e);
-    return null;
+    console.warn('Supabase init error:', e);
+    return false;
   }
 }
 
 async function syncToSupa(quadro) {
+  if (!supaClient) return;
   const cards = getCards(quadro);
-  await supaFetch('/rest/v1/vb_sync', 'POST', {
-    id: quadro,
-    quadro,
-    dados: cards,
-    updated_at: new Date().toISOString()
-  });
-}
-
-async function syncFromSupa(quadro) {
-  const result = await supaFetch(`/rest/v1/vb_sync?id=eq.${quadro}&select=dados,updated_at`);
-  if (!result || !result.length) return null;
-  return result[0];
+  try {
+    await supaClient.from('vb_sync').upsert({
+      id: quadro,
+      quadro,
+      dados: cards,
+      updated_at: new Date().toISOString()
+    });
+  } catch(e) { console.warn('syncToSupa error:', e); }
 }
 
 async function syncAllFromSupa() {
-  const result = await supaFetch('/rest/v1/vb_sync?select=*');
-  if (!result || !result.length) return false;
+  if (!supaClient) return false;
+  try {
+    const { data, error } = await supaClient.from('vb_sync').select('*');
+    if (error || !data || !data.length) return false;
 
-  let updated = false;
-  for (const row of result) {
-    const quadro = row.quadro;
-    const key = 'vb_cards_' + quadro;
-    const localTime = localStorage.getItem('vb_sync_time_' + quadro) || '0';
-    const supaTime = row.updated_at || '0';
-
-    // Se Supabase tem versão mais recente, usar ela
-    if (supaTime > localTime) {
-      localStorage.setItem(key, JSON.stringify(row.dados));
-      localStorage.setItem('vb_sync_time_' + quadro, supaTime);
-      updated = true;
+    let updated = false;
+    for (const row of data) {
+      const quadro = row.quadro;
+      const key = 'vb_cards_' + quadro;
+      const localTime = localStorage.getItem('vb_sync_time_' + quadro) || '0';
+      const supaTime = row.updated_at || '0';
+      if (supaTime > localTime) {
+        localStorage.setItem(key, JSON.stringify(row.dados));
+        localStorage.setItem('vb_sync_time_' + quadro, supaTime);
+        updated = true;
+      }
     }
-  }
-  return updated;
+    return updated;
+  } catch(e) { console.warn('syncAllFromSupa error:', e); return false; }
+}
+
+function initRealtimeSync() {
+  if (!supaClient) return;
+  supaClient
+    .channel('vb_sync_changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'vb_sync' }, (payload) => {
+      const row = payload.new;
+      if (!row) return;
+      const quadro = row.quadro;
+      const key = 'vb_cards_' + quadro;
+      const localTime = localStorage.getItem('vb_sync_time_' + quadro) || '0';
+      const supaTime = row.updated_at || '0';
+      if (supaTime > localTime) {
+        localStorage.setItem(key, JSON.stringify(row.dados));
+        localStorage.setItem('vb_sync_time_' + quadro, supaTime);
+        // Atualizar a view se o quadro estiver visível
+        const syncStatus = document.getElementById('syncStatus');
+        if (syncStatus) { syncStatus.textContent = '🔄 Atualizando...'; setTimeout(() => syncStatus.textContent = '', 2000); }
+        if (currentPage === quadro) renderBoard(quadro);
+        else if (currentPage === 'home') renderHome();
+        showToast('🔄 ' + quadro + ' atualizado!');
+      }
+    })
+    .subscribe((status) => {
+      console.log('Realtime status:', status);
+      const syncStatus = document.getElementById('syncStatus');
+      if (syncStatus) {
+        if (status === 'SUBSCRIBED') {
+          syncStatus.textContent = '🟢 Tempo real';
+          setTimeout(() => syncStatus.textContent = '', 3000);
+        }
+      }
+    });
 }
 
 // ── ESTADO ───────────────────────────────────────────────────────────
@@ -988,43 +1011,81 @@ function switchPage(page, btn) {
 }
 
 // ── DRAG & DROP ───────────────────────────────────────────────────────
-function onDragStart(e, id) {
+let dragQuadro = null;
+
+function onDragStart(e, id, quadro) {
   dragId = id;
+  dragQuadro = quadro;
   e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', id);
+  e.dataTransfer.setData('text/plain', id + '|' + quadro);
   setTimeout(() => document.getElementById('card-'+id)?.classList.add('card-dragging'), 0);
 }
+
 function onDragEnd(e) {
   document.querySelectorAll('.card-dragging').forEach(el => el.classList.remove('card-dragging'));
-  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  document.querySelectorAll('.col-body.drag-over').forEach(el => el.classList.remove('drag-over'));
   dragId = null;
+  dragQuadro = null;
 }
+
 function onDragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
-  e.currentTarget.classList.add('drag-over');
+  // Encontrar o col-body mais próximo e destacar
+  const colBody = e.currentTarget.closest ? e.currentTarget : e.currentTarget;
+  colBody.classList.add('drag-over');
 }
+
 function onDragLeave(e) {
-  // Só remover se saiu de verdade (não para filho)
-  if (!e.currentTarget.contains(e.relatedTarget)) {
-    e.currentTarget.classList.remove('drag-over');
+  const colBody = e.currentTarget;
+  // Só remover highlight se o mouse saiu da coluna de verdade
+  if (!colBody.contains(e.relatedTarget)) {
+    colBody.classList.remove('drag-over');
   }
 }
+
 function onDrop(e, col, quadro) {
   e.preventDefault();
   e.stopPropagation();
-  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-  const id = dragId || e.dataTransfer.getData('text/plain');
-  if (!id) return;
-  const cards = getCards(quadro);
+  
+  // Limpar highlights
+  document.querySelectorAll('.col-body.drag-over').forEach(el => el.classList.remove('drag-over'));
+  
+  // Pegar id do card sendo arrastado
+  const payload = e.dataTransfer.getData('text/plain');
+  const id = payload ? payload.split('|')[0] : dragId;
+  const q = payload ? (payload.split('|')[1] || dragQuadro) : dragQuadro;
+  
+  if (!id || !q) return;
+  
+  const cards = getCards(q);
   const c = cards.find(x => x.id === id);
   if (c && c.col !== col) {
     c.col = col;
-    saveCards(quadro);
-    renderBoard(quadro);
-    showToast('✅ Card movido!');
+    saveCards(q);
+    renderBoard(q);
+    showToast('✅ Movido para ' + col);
   }
   dragId = null;
+  dragQuadro = null;
+}
+
+// Permitir drop em cards também (repassa para a coluna)
+function onCardDragOver(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect = 'move';
+  // Destacar a coluna pai
+  const colBody = e.currentTarget.closest('.col-body');
+  if (colBody) {
+    document.querySelectorAll('.col-body.drag-over').forEach(el => el.classList.remove('drag-over'));
+    colBody.classList.add('drag-over');
+  }
+}
+
+function onCardDrop(e, col, quadro) {
+  e.stopPropagation();
+  onDrop(e, col, quadro);
 }
 
 // ── DADOS POR QUADRO ─────────────────────────────────────────────────
@@ -1218,7 +1279,7 @@ function contCardHTML(c, q) {
       <span class="chk-label ${item.done?'done':''}">${esc(item.text)}</span>
     </div>`).join('')}
     <div class="chk-count">${chkDone}/${chkTotal} feitos${chkTotal>4?` · +${chkTotal-4} itens`:''}</div></div>` : '';
-  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);border-left:3px solid var(--gold);">
+  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}','${q}')" ondragend="onDragEnd(event)" ondragover="onCardDragOver(event)" ondrop="onCardDrop(event,'${c.col}','${q}')" style="background:var(--surface2);border-left:3px solid var(--gold);">
     <div class="card-head">
       <span class="drag-handle" title="Arrastar">⠿</span>
       <div class="card-title">${esc(c.title)}</div>
@@ -1257,7 +1318,7 @@ function engCardHTML(c, q) {
       <span class="chk-label ${item.done?'done':''}">${esc(item.text)}</span>
     </div>`).join('')}
     <div class="chk-count">${chkDone}/${chkTotal} feitos${chkTotal>3?` · +${chkTotal-3} itens`:''}</div></div>` : '';
-  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);border-left:3px solid var(--eng);">
+  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}','${q}')" ondragend="onDragEnd(event)" ondragover="onCardDragOver(event)" ondrop="onCardDrop(event,'${c.col}','${q}')" style="background:var(--surface2);border-left:3px solid var(--eng);">
     <div class="card-head">
       <span class="drag-handle" title="Arrastar">⠿</span>
       <div class="card-title">${esc(c.title)}</div>
@@ -1293,7 +1354,7 @@ function prospCardHTML(c, q) {
   const hasEmail = c.email && c.email.trim();
   const falta = !hasTel && !hasEmail;
   const tl = (c.timeline||[]).slice(-3).reverse();
-  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}')" ondragend="onDragEnd(event)" style="background:var(--surface2);">
+  return `<div class="card" id="card-${c.id}" draggable="true" ondragstart="onDragStart(event,'${c.id}','${q}')" ondragend="onDragEnd(event)" ondragover="onCardDragOver(event)" ondrop="onCardDrop(event,'${c.col}','${q}')" style="background:var(--surface2);">
     <div class="card-head">
       <span class="drag-handle" title="Arrastar">⠿</span>
       <div class="card-title">${esc(c.title)}</div>
@@ -1322,7 +1383,7 @@ function prospCardHTML(c, q) {
       <div class="tl-hdr">Linha do tempo</div>
       ${tl.length?tl.map((e,i)=>`<div class="tl-entry"><div class="tl-dot ${i>0?'old':''}"></div><span class="tl-date">${e.date}</span><span class="tl-text">${esc(e.text)}</span></div>`).join(''):`<div class="tl-empty">Nenhuma atividade</div>`}
       <div class="tl-add">
-        <input class="tl-input" id="tl-${c.id}" type="text" placeholder="Registrar atividade..." onclick="event.stopPropagation()" />
+        <input class="tl-input" id="tl-${c.id}" type="text" placeholder="Registrar atividade..." onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){event.stopPropagation();addTlEntry('${q}','${c.id}');}" />
         <button class="tl-btn" onclick="event.stopPropagation();addTlEntry('${q}','${c.id}')">+ Add</button>
       </div>
     </div>
@@ -2337,24 +2398,31 @@ function setChip(quadro, value, btn) {
 // ── INIT ──────────────────────────────────────────────────────────────
 pagoAtivo = false;
 
-// Sincronizar com Supabase ao iniciar
 (async () => {
   const syncStatus = document.getElementById('syncStatus');
+
+  // Inicializar Supabase client
+  const ok = initSupabase();
+  if (!ok) {
+    if (syncStatus) syncStatus.textContent = '⚠️ Offline';
+    renderHome();
+    return;
+  }
+
+  // Buscar dados mais recentes ao iniciar
   if (syncStatus) syncStatus.textContent = '🔄 Sincronizando...';
   try {
     const updated = await syncAllFromSupa();
-    if (syncStatus) syncStatus.textContent = updated ? '✅ Sincronizado' : '✅ Online';
-    setTimeout(() => { if(syncStatus) syncStatus.textContent = ''; }, 3000);
+    if (syncStatus) syncStatus.textContent = updated ? '✅ Atualizado' : '🟢 Online';
+    setTimeout(() => { if(syncStatus) syncStatus.textContent = ''; }, 2000);
   } catch(e) {
     if (syncStatus) syncStatus.textContent = '⚠️ Offline';
   }
+
+  // Ativar sincronização em tempo real
+  initRealtimeSync();
+
   renderHome();
-  // Sincronizar a cada 30 segundos
-  setInterval(async () => {
-    const updated = await syncAllFromSupa();
-    if (updated && currentPage !== 'home') renderBoard(currentPage);
-    if (updated && currentPage === 'home') renderHome();
-  }, 30000);
 })();
 
 // Search listeners — adicionados após o DOM estar pronto
